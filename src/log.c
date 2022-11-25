@@ -51,7 +51,9 @@ struct log_ctx *sxpi_log_alloc(void)
 static void default_callback(void *arg, int level, const char *filename, int ln,
                              const char *fn, const char *fmt, va_list vl)
 {
-    char logline[512];
+    char logline[128];
+    char *logbuf = NULL;
+    const char *logp = logline;
     struct log_ctx *ctx = arg;
     static const int avlog_levels[] = {
         [SXPLAYER_LOG_VERBOSE] = AV_LOG_VERBOSE,
@@ -63,7 +65,22 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
     const int avlog_level = avlog_levels[level];
     void *avlog = ctx->avlog;
 
-    vsnprintf(logline, sizeof(logline), fmt, vl);
+    /* we need a copy because it may be re-used a 2nd time */
+    va_list vl_copy;
+    va_copy(vl_copy, vl);
+
+    int len = vsnprintf(logline, sizeof(logline), fmt, vl);
+
+    /* handle the case where the line doesn't fit the stack buffer */
+    if (len >= sizeof(logline)) {
+        logbuf = av_malloc(len + 1);
+        if (!logbuf) {
+            va_end(vl_copy);
+            return;
+        }
+        vsnprintf(logbuf, len + 1, fmt, vl_copy);
+        logp = logbuf;
+    }
 
     if (ENABLE_DBG) {
         int64_t t;
@@ -73,13 +90,16 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
             ctx->last_time = t;
         av_log(avlog, avlog_level, "[%f] %s:%d %s: %s\n",
                (t - ctx->last_time) / 1000000.,
-               filename, ln, fn, logline);
+               filename, ln, fn, logp);
         ctx->last_time = t;
         pthread_mutex_unlock(&ctx->lock);
     } else {
         av_log(avlog, avlog_level, "%s:%d %s: %s\n",
-               filename, ln, fn, logline);
+               filename, ln, fn, logp);
     }
+
+    av_free(logbuf);
+    va_end(vl_copy);
 }
 
 int sxpi_log_init(struct log_ctx *ctx, void *avlog)
