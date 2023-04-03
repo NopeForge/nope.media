@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -23,31 +23,31 @@
 
 #include <stdint.h>
 
-#include "sxplayer.h"
+#include "nopemd.h"
 #include "opts.h"
 #include "msg.h"
 
-const char *sxpi_async_get_msg_type_string(enum msg_type type);
+const char *nmdi_async_get_msg_type_string(enum msg_type type);
 
-void sxpi_msg_free_data(void *arg);
+void nmdi_msg_free_data(void *arg);
 
-struct async_context *sxpi_async_alloc_context(void);
+struct async_context *nmdi_async_alloc_context(void);
 
-int sxpi_async_init(struct async_context *actx, void *log_ctx,
-                    const char *filename, const struct sxplayer_opts *o);
+int nmdi_async_init(struct async_context *actx, void *log_ctx,
+                    const char *filename, const struct nmdi_opts *o);
 
-int sxpi_async_start(struct async_context *actx);
+int nmdi_async_start(struct async_context *actx);
 
-int sxpi_async_fetch_info(struct async_context *actx, struct sxplayer_info *info);
+int nmdi_async_fetch_info(struct async_context *actx, struct nmd_info *info);
 
-int sxpi_async_seek(struct async_context *actx, int64_t ts);
+int nmdi_async_seek(struct async_context *actx, int64_t ts);
 
-int sxpi_async_pop_frame(struct async_context *actx, AVFrame **framep);
+int nmdi_async_pop_frame(struct async_context *actx, AVFrame **framep);
 
-int sxpi_async_stop(struct async_context *actx);
+int nmdi_async_stop(struct async_context *actx);
 
-int sxpi_sxpi_async_started(struct async_context *actx);
+int nmdi_nmdi_async_started(struct async_context *actx);
 
-void sxpi_async_free(struct async_context **actxp);
+void nmdi_async_free(struct async_context **actxp);
 
 #endif /* ASYNC_H */

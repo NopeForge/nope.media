@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <sxplayer.h>
+#include <nopemd.h>
 
 int main(int ac, char **av)
 {
@@ -13,23 +13,23 @@ int main(int ac, char **av)
     const char *filename = av[1];
     const int use_pkt_duration = ac > 2 ? atoi(av[2]) : 0;
 
-    struct sxplayer_info info;
-    struct sxplayer_ctx *s = sxplayer_create(filename);
-    struct sxplayer_frame *f;
+    struct nmd_info info;
+    struct nmd_ctx *s = nmd_create(filename);
+    struct nmd_frame *f;
 
     if (!s)
         return -1;
-    sxplayer_set_option(s, "skip", 3.0);
-    sxplayer_set_option(s, "auto_hwaccel", 0);
-    sxplayer_set_option(s, "use_pkt_duration", use_pkt_duration);
-    f = sxplayer_get_frame(s, 53.0);
+    nmd_set_option(s, "skip", 3.0);
+    nmd_set_option(s, "auto_hwaccel", 0);
+    nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
+    f = nmd_get_frame(s, 53.0);
     if (!f) {
         fprintf(stderr, "didn't get an image\n");
         return -1;
     }
-    sxplayer_release_frame(f);
+    nmd_release_frame(f);
 
-    if (sxplayer_get_info(s, &info) < 0) {
+    if (nmd_get_info(s, &info) < 0) {
         fprintf(stderr, "can not fetch image info\n");
     }
     if (info.width != 480 || info.height != 640) {
@@ -37,13 +37,13 @@ int main(int ac, char **av)
         return -1;
     }
 
-    f = sxplayer_get_frame(s, 12.3);
+    f = nmd_get_frame(s, 12.3);
     if (f) {
-        sxplayer_release_frame(f);
+        nmd_release_frame(f);
         fprintf(stderr, "we got a new frame even though the source is an image\n");
         return -1;
     }
 
-    sxplayer_free(&s);
+    nmd_free(&s);
     return 0;
 }

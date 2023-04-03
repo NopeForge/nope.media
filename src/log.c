@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -30,17 +30,17 @@ struct log_ctx {
     pthread_mutex_t lock;
     void *avlog;
     void *user_arg;
-    sxplayer_log_callback_type callback;
+    nmd_log_callback_type callback;
 };
 
-void sxpi_log_set_callback(struct log_ctx *ctx, void *arg,
-                           sxplayer_log_callback_type callback)
+void nmdi_log_set_callback(struct log_ctx *ctx, void *arg,
+                           nmd_log_callback_type callback)
 {
     ctx->user_arg = arg;
     ctx->callback = callback;
 }
 
-struct log_ctx *sxpi_log_alloc(void)
+struct log_ctx *nmdi_log_alloc(void)
 {
     struct log_ctx *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
@@ -56,11 +56,11 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
     const char *logp = logline;
     struct log_ctx *ctx = arg;
     static const int avlog_levels[] = {
-        [SXPLAYER_LOG_VERBOSE] = AV_LOG_VERBOSE,
-        [SXPLAYER_LOG_DEBUG]   = AV_LOG_DEBUG,
-        [SXPLAYER_LOG_INFO]    = AV_LOG_INFO,
-        [SXPLAYER_LOG_WARNING] = AV_LOG_WARNING,
-        [SXPLAYER_LOG_ERROR]   = AV_LOG_ERROR,
+        [NMD_LOG_VERBOSE] = AV_LOG_VERBOSE,
+        [NMD_LOG_DEBUG]   = AV_LOG_DEBUG,
+        [NMD_LOG_INFO]    = AV_LOG_INFO,
+        [NMD_LOG_WARNING] = AV_LOG_WARNING,
+        [NMD_LOG_ERROR]   = AV_LOG_ERROR,
     };
     const int avlog_level = avlog_levels[level];
     void *avlog = ctx->avlog;
@@ -102,14 +102,14 @@ static void default_callback(void *arg, int level, const char *filename, int ln,
     va_end(vl_copy);
 }
 
-int sxpi_log_init(struct log_ctx *ctx, void *avlog)
+int nmdi_log_init(struct log_ctx *ctx, void *avlog)
 {
     ctx->avlog = avlog;
-    sxpi_log_set_callback(ctx, ctx, default_callback);
+    nmdi_log_set_callback(ctx, ctx, default_callback);
     return AVERROR(pthread_mutex_init(&ctx->lock, NULL));
 }
 
-void sxpi_log_free(struct log_ctx **ctxp)
+void nmdi_log_free(struct log_ctx **ctxp)
 {
     struct log_ctx *ctx = *ctxp;
     if (!ctx)
@@ -118,7 +118,7 @@ void sxpi_log_free(struct log_ctx **ctxp)
     av_freep(ctxp);
 }
 
-void sxpi_log_print(void *log_ctx, int log_level, const char *filename,
+void nmdi_log_print(void *log_ctx, int log_level, const char *filename,
                     int ln, const char *fn, const char *fmt, ...)
 {
     va_list vl;

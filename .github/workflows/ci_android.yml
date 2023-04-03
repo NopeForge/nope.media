@@ -54,7 +54,7 @@ jobs:
 
         make install -j$(($(nproc)+1))
 
-    - name: Build sxplayer lib for Android
+    - name: Build nope.media for Android
       run: |
         PKG_CONFIG_LIBDIR=$HOME/ffmpeg-install-${{ matrix.arch }}/lib/pkgconfig/ \
         meson setup --cross-file .github/meson-android-${{ matrix.arch }}.ini builddir

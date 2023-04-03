@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -22,7 +22,7 @@
 #include "internal.h"
 #include "log.h"
 
-struct decoder_ctx *sxpi_decoder_alloc(void)
+struct decoder_ctx *nmdi_decoder_alloc(void)
 {
     struct decoder_ctx *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
@@ -35,12 +35,12 @@ struct decoder_ctx *sxpi_decoder_alloc(void)
     return ctx;
 }
 
-int sxpi_decoder_init(void *log_ctx,
-                 struct decoder_ctx *ctx,
-                 const struct decoder *dec,
-                 const AVStream *stream,
-                 struct decoding_ctx *decoding_ctx,
-                 const struct sxplayer_opts *opts)
+int nmdi_decoder_init(void *log_ctx,
+                      struct decoder_ctx *ctx,
+                      const struct decoder *dec,
+                      const AVStream *stream,
+                      struct decoding_ctx *decoding_ctx,
+                      const struct nmdi_opts *opts)
 {
     int ret;
 
@@ -56,7 +56,7 @@ int sxpi_decoder_init(void *log_ctx,
     }
 
     // We need to copy the stream information because the stream (and its codec
-    // context) can be destroyed any time after the sxpi_decoder_init() returns
+    // context) can be destroyed any time after the nmdi_decoder_init() returns
     avcodec_parameters_to_context(ctx->avctx, stream->codecpar);
 
     // The MediaCodec decoder needs pkt_timebase in order to rescale the
@@ -77,18 +77,18 @@ int sxpi_decoder_init(void *log_ctx,
     return 0;
 }
 
-int sxpi_decoder_push_packet(struct decoder_ctx *ctx, const AVPacket *pkt)
+int nmdi_decoder_push_packet(struct decoder_ctx *ctx, const AVPacket *pkt)
 {
     return ctx->dec->push_packet(ctx, pkt);
 }
 
-void sxpi_decoder_flush(struct decoder_ctx *ctx)
+void nmdi_decoder_flush(struct decoder_ctx *ctx)
 {
     TRACE(ctx, "flush");
     ctx->dec->flush(ctx);
 }
 
-void sxpi_decoder_free(struct decoder_ctx **ctxp)
+void nmdi_decoder_free(struct decoder_ctx **ctxp)
 {
     struct decoder_ctx *ctx = *ctxp;
     if (!ctx)

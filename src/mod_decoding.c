@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -28,15 +28,15 @@
 #include "msg.h"
 #include "log.h"
 
-extern const struct decoder sxpi_decoder_ffmpeg_sw;
-extern const struct decoder sxpi_decoder_ffmpeg_hw;
-static const struct decoder *decoder_def_software = &sxpi_decoder_ffmpeg_sw;
+extern const struct decoder nmdi_decoder_ffmpeg_sw;
+extern const struct decoder nmdi_decoder_ffmpeg_hw;
+static const struct decoder *decoder_def_software = &nmdi_decoder_ffmpeg_sw;
 
 #if __APPLE__
-extern const struct decoder sxpi_decoder_vt;
-static const struct decoder *decoder_def_hwaccel = &sxpi_decoder_vt;
+extern const struct decoder nmdi_decoder_vt;
+static const struct decoder *decoder_def_hwaccel = &nmdi_decoder_vt;
 #else
-static const struct decoder *decoder_def_hwaccel = &sxpi_decoder_ffmpeg_hw;
+static const struct decoder *decoder_def_hwaccel = &nmdi_decoder_ffmpeg_hw;
 #endif
 
 struct decoding_ctx {
@@ -55,12 +55,12 @@ struct decoding_ctx {
     int64_t seek_request;
 };
 
-struct decoding_ctx *sxpi_decoding_alloc(void)
+struct decoding_ctx *nmdi_decoding_alloc(void)
 {
     struct decoding_ctx *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return NULL;
-    ctx->decoder = sxpi_decoder_alloc();
+    ctx->decoder = nmdi_decoder_alloc();
     if (!ctx->decoder) {
         av_freep(&ctx);
         return NULL;
@@ -68,18 +68,18 @@ struct decoding_ctx *sxpi_decoding_alloc(void)
     return ctx;
 }
 
-const AVCodecContext *sxpi_decoding_get_avctx(struct decoding_ctx *ctx)
+const AVCodecContext *nmdi_decoding_get_avctx(struct decoding_ctx *ctx)
 {
     return ctx->decoder->avctx;
 }
 
-int sxpi_decoding_init(void *log_ctx,
+int nmdi_decoding_init(void *log_ctx,
                        struct decoding_ctx *ctx,
                        AVThreadMessageQueue *pkt_queue,
                        AVThreadMessageQueue *frames_queue,
                        int is_image,
                        const AVStream *stream,
-                       const struct sxplayer_opts *opts)
+                       const struct nmdi_opts *opts)
 {
     int ret;
     const struct decoder *dec_def, *dec_def_fallback;
@@ -122,13 +122,13 @@ int sxpi_decoding_init(void *log_ctx,
 
     DUMP_INFO(stream->codecpar, "original");
 
-    ret = sxpi_decoder_init(log_ctx, ctx->decoder, dec_def, stream, ctx, opts);
+    ret = nmdi_decoder_init(log_ctx, ctx->decoder, dec_def, stream, ctx, opts);
     if (ret < 0 && dec_def_fallback) {
         TRACE(ctx, "unable to init %s decoder, fallback on %s decoder",
               dec_def->name, dec_def_fallback->name);
         if (ret != AVERROR_DECODER_NOT_FOUND)
             LOG(ctx, ERROR, "Decoder fallback due to %s", av_err2str(ret));
-        ret = sxpi_decoder_init(log_ctx, ctx->decoder, dec_def_fallback, stream, ctx, opts);
+        ret = nmdi_decoder_init(log_ctx, ctx->decoder, dec_def_fallback, stream, ctx, opts);
     }
     if (ret < 0)
         return ret;
@@ -190,7 +190,7 @@ static int queue_cached_frame(struct decoding_ctx *ctx)
     return 0;
 }
 
-int sxpi_decoding_queue_frame(struct decoding_ctx *ctx, AVFrame *frame)
+int nmdi_decoding_queue_frame(struct decoding_ctx *ctx, AVFrame *frame)
 {
     int ret;
 
@@ -239,7 +239,7 @@ int sxpi_decoding_queue_frame(struct decoding_ctx *ctx, AVFrame *frame)
     return queue_frame(ctx, frame);
 }
 
-void sxpi_decoding_run(struct decoding_ctx *ctx)
+void nmdi_decoding_run(struct decoding_ctx *ctx)
 {
     int ret;
     int in_err, out_err;
@@ -267,7 +267,7 @@ void sxpi_decoding_run(struct decoding_ctx *ctx)
              * pushed (or dropped) all its cached frames. After this flush, we
              * can assume that the decoder will not called async_queue_frame()
              * until a new packet is pushed. */
-            sxpi_decoder_flush(ctx->decoder);
+            nmdi_decoder_flush(ctx->decoder);
 
             av_frame_free(&ctx->tmp_frame);
 
@@ -283,7 +283,7 @@ void sxpi_decoding_run(struct decoding_ctx *ctx)
             /* Forward seek message */
             ret = av_thread_message_queue_send(ctx->frames_queue, &msg, 0);
             if (ret < 0) {
-                sxpi_msg_free_data(&msg);
+                nmdi_msg_free_data(&msg);
                 break;
             }
 
@@ -292,7 +292,7 @@ void sxpi_decoding_run(struct decoding_ctx *ctx)
 
         pkt = msg.data;
         TRACE(ctx, "got a packet of size %d, push it to decoder", pkt->size);
-        ret = sxpi_decoder_push_packet(ctx->decoder, pkt);
+        ret = nmdi_decoder_push_packet(ctx->decoder, pkt);
         av_packet_unref(pkt);
         av_freep(&pkt);
         if (ret < 0)
@@ -303,13 +303,13 @@ void sxpi_decoding_run(struct decoding_ctx *ctx)
     if (ret == AVERROR_EOF) {
         TRACE(ctx, "flush cached frames");
         do {
-            ret = sxpi_decoder_push_packet(ctx->decoder, NULL);
+            ret = nmdi_decoder_push_packet(ctx->decoder, NULL);
         } while (ret == 0 || ret == AVERROR(EAGAIN));
     }
 
     /* We pushed everything we could to the decoder, now we make sure frame
      * queuing callback won't be called anymore */
-    sxpi_decoder_flush(ctx->decoder);
+    nmdi_decoder_flush(ctx->decoder);
 
     av_frame_free(&ctx->tmp_frame);
 
@@ -326,11 +326,11 @@ void sxpi_decoding_run(struct decoding_ctx *ctx)
     av_thread_message_queue_set_err_recv(ctx->frames_queue, out_err);
 }
 
-void sxpi_decoding_free(struct decoding_ctx **ctxp)
+void nmdi_decoding_free(struct decoding_ctx **ctxp)
 {
     struct decoding_ctx *ctx = *ctxp;
     if (!ctx)
         return;
-    sxpi_decoder_free(&ctx->decoder);
+    nmdi_decoder_free(&ctx->decoder);
     av_freep(ctxp);
 }

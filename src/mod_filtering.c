@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -29,7 +29,7 @@
 #include <libavutil/pixdesc.h>
 #include <libavutil/timestamp.h>
 
-#include "sxplayer.h"
+#include "nopemd.h"
 #include "internal.h"
 #include "mod_filtering.h"
 #include "log.h"
@@ -62,7 +62,7 @@ struct filtering_ctx {
     FFTSample *rdft_data[AUDIO_NBCHANNELS]; // real discrete fourier transform data for each channel
 };
 
-struct filtering_ctx *sxpi_filtering_alloc(void)
+struct filtering_ctx *nmdi_filtering_alloc(void)
 {
     struct filtering_ctx *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
@@ -248,9 +248,9 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
     snprintf(args, sizeof(args), "sws_flags=+full_chroma_int;%s", ctx->filters ? ctx->filters : "");
     if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->last_frame_format);
-        enum AVPixelFormat sw_pix_fmt = sxpi_pix_fmts_sx2ff(ctx->sw_pix_fmt);
-        if (ctx->sw_pix_fmt == SXPLAYER_PIXFMT_AUTO) {
-            const enum sxplayer_pixel_format fmt = sxpi_pix_fmts_ff2sx(ctx->last_frame_format);
+        enum AVPixelFormat sw_pix_fmt = nmdi_pix_fmts_nmd2ff(ctx->sw_pix_fmt);
+        if (ctx->sw_pix_fmt == NMD_PIXFMT_AUTO) {
+            const enum nmd_pixel_format fmt = nmdi_pix_fmts_ff2nmd(ctx->last_frame_format);
             if (fmt == -1) {
                 LOG(ctx, DEBUG, "Unsupported software pixel format: %s, falling back to rgba",
                     av_get_pix_fmt_name(ctx->last_frame_format));
@@ -263,7 +263,7 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
 
         if (ctx->max_pixels) {
             int w = codecpar->width, h = codecpar->height;
-            sxpi_update_dimensions(&w, &h, ctx->max_pixels);
+            nmdi_update_dimensions(&w, &h, ctx->max_pixels);
             av_strlcatf(args, sizeof(args),
                         "%sscale=%d:%d:force_original_aspect_ratio=decrease",
                         SEP(args), w, h);
@@ -337,14 +337,14 @@ static char *update_filters_str(char *filters, const char *append)
     return str;
 }
 
-int sxpi_filtering_init(void *log_ctx,
+int nmdi_filtering_init(void *log_ctx,
                         struct filtering_ctx *ctx,
                         AVThreadMessageQueue *in_queue,
                         AVThreadMessageQueue *out_queue,
                         const AVStream *stream,
                         const AVCodecContext *avctx,
                         double media_rotation,
-                        const struct sxplayer_opts *o)
+                        const struct nmdi_opts *o)
 {
     ctx->log_ctx = log_ctx;
     ctx->in_queue  = in_queue;
@@ -517,7 +517,7 @@ static int flush_frames(struct filtering_ctx *ctx)
     return ret;
 }
 
-void sxpi_filtering_run(struct filtering_ctx *ctx)
+void nmdi_filtering_run(struct filtering_ctx *ctx)
 {
     int ret;
     int in_err, out_err;
@@ -546,7 +546,7 @@ void sxpi_filtering_run(struct filtering_ctx *ctx)
             av_thread_message_flush(ctx->out_queue);
             ret = av_thread_message_queue_send(ctx->out_queue, &msg, 0);
             if (ret < 0) {
-                sxpi_msg_free_data(&msg);
+                nmdi_msg_free_data(&msg);
                 break;
             }
             continue;
@@ -617,7 +617,7 @@ void sxpi_filtering_run(struct filtering_ctx *ctx)
     av_thread_message_queue_set_err_recv(ctx->out_queue, out_err);
 }
 
-void sxpi_filtering_free(struct filtering_ctx **fp)
+void nmdi_filtering_free(struct filtering_ctx **fp)
 {
     struct filtering_ctx *ctx = *fp;
 

@@ -5,10 +5,10 @@
 #include <math.h>
 #include <SDL.h>
 
-#include "sxplayer.h"
+#include "nopemd.h"
 
 struct player {
-    struct sxplayer_ctx *sxplayer_ctx;
+    struct nmd_ctx *nmd_ctx;
 
     SDL_Window *window;
     SDL_Renderer *renderer;
@@ -149,9 +149,9 @@ static void render(struct player *p)
         .h = p->viewport[3],
     };
 
-    struct sxplayer_frame *frame;
+    struct nmd_frame *frame;
     if (p->next_frame_requested) {
-        frame = sxplayer_get_next_frame(p->sxplayer_ctx);
+        frame = nmd_get_next_frame(p->nmd_ctx);
         if (frame) {
             printf("Stepped to frame t=%f\n", frame->ts);
             p->frame_ts = frame->ts * 1000000;
@@ -161,7 +161,7 @@ static void render(struct player *p)
         p->next_frame_requested = 0;
     } else {
         update_time(p, -1);
-        frame = sxplayer_get_frame(p->sxplayer_ctx, p->frame_time);
+        frame = nmd_get_frame(p->nmd_ctx, p->frame_time);
     }
 
     if (p->seeking) {
@@ -188,7 +188,7 @@ static void render(struct player *p)
                                        frame->height);
         if (!p->texture) {
             fprintf(stderr, "Failed to allocate SDL texture: %s\n", SDL_GetError());
-            sxplayer_release_frame(frame);
+            nmd_release_frame(frame);
             return;
         }
         p->texture_width = frame->width;
@@ -199,7 +199,7 @@ static void render(struct player *p)
     SDL_RenderClear(p->renderer);
     SDL_RenderCopy(p->renderer, p->texture, NULL, &dst);
 
-    sxplayer_release_frame(frame);
+    nmd_release_frame(frame);
 }
 
 static int key_callback(struct player *p, SDL_KeyboardEvent *event)
@@ -266,18 +266,18 @@ int main(int ac, char **av)
     }
 
     struct player p = {
-        .sxplayer_ctx = sxplayer_create(av[1]),
+        .nmd_ctx = nmd_create(av[1]),
     };
-    if (!p.sxplayer_ctx) {
+    if (!p.nmd_ctx) {
         ret = -1;
         goto done;
     }
 
-    sxplayer_set_option(p.sxplayer_ctx, "sw_pix_fmt", SXPLAYER_PIXFMT_RGBA);
-    sxplayer_set_option(p.sxplayer_ctx, "auto_hwaccel", 0);
+    nmd_set_option(p.nmd_ctx, "sw_pix_fmt", NMD_PIXFMT_RGBA);
+    nmd_set_option(p.nmd_ctx, "auto_hwaccel", 0);
 
-    struct sxplayer_info info = {0};
-    ret = sxplayer_get_info(p.sxplayer_ctx, &info);
+    struct nmd_info info = {0};
+    ret = nmd_get_info(p.nmd_ctx, &info);
     if (ret < 0) {
         ret = -1;
         goto done;
@@ -305,7 +305,7 @@ int main(int ac, char **av)
     }
 
     char title[256];
-    snprintf(title, sizeof(title), "sxplayer - %s", av[1]);
+    snprintf(title, sizeof(title), "nope.media - %s", av[1]);
     p.window = SDL_CreateWindow(title,
                                 SDL_WINDOWPOS_UNDEFINED,
                                 SDL_WINDOWPOS_UNDEFINED,
@@ -360,7 +360,7 @@ done:
     SDL_DestroyRenderer(p.renderer);
     SDL_DestroyWindow(p.window);
     SDL_Quit();
-    sxplayer_free(&p.sxplayer_ctx);
+    nmd_free(&p.nmd_ctx);
 
     return ret;
 }
