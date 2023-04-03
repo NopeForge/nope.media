@@ -27,8 +27,6 @@ struct nmdi_opts {
     int avselect;                           // select audio or video
     double start_time;                      // see public header
     double end_time;                        // see public header
-    double skip;                            // see public header
-    double trim_duration;                   // see public header
     double dist_time_seek_trigger;          // see public header
     int max_nb_frames;                      // maximum number of frames in the queue
     int max_nb_packets;                     // maximum number of packets in the queue
