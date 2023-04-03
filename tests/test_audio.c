@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <sxplayer.h>
+#include <nopemd.h>
 
 int main(int ac, char **av)
 {
@@ -14,20 +14,20 @@ int main(int ac, char **av)
     const int use_pkt_duration = ac > 2 ? atoi(av[2]) : 0;
 
     int i = 0, ret = 0, r, smp = 0;
-    struct sxplayer_ctx *s = sxplayer_create(filename);
+    struct nmd_ctx *s = nmd_create(filename);
 
     if (!s)
         return -1;
 
-    sxplayer_set_option(s, "auto_hwaccel", 0);
-    sxplayer_set_option(s, "use_pkt_duration", use_pkt_duration);
-    sxplayer_set_option(s, "avselect", SXPLAYER_SELECT_AUDIO);
-    sxplayer_set_option(s, "audio_texture", 0);
+    nmd_set_option(s, "auto_hwaccel", 0);
+    nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
+    nmd_set_option(s, "avselect", NMD_SELECT_AUDIO);
+    nmd_set_option(s, "audio_texture", 0);
 
     for (r = 0; r < 2; r++) {
         printf("run #%d\n", r+1);
         for (;;) {
-            struct sxplayer_frame *frame = sxplayer_get_next_frame(s);
+            struct nmd_frame *frame = nmd_get_next_frame(s);
 
             if (!frame) {
                 printf("null frame\n");
@@ -37,11 +37,11 @@ int main(int ac, char **av)
                    i++, frame->datap[0], frame->ts, frame->nb_samples, frame->pix_fmt);
             smp += frame->nb_samples;
 
-            sxplayer_release_frame(frame);
+            nmd_release_frame(frame);
         }
     }
 
-    sxplayer_free(&s);
+    nmd_free(&s);
 
     if (smp != 15876000) {
         fprintf(stderr, "decoded %d/15876000 expected samples\n", smp);

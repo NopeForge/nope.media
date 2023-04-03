@@ -1,52 +1,48 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SXPLAYER_H
-#define SXPLAYER_H
+#ifndef NOPE_MEDIA_H
+#define NOPE_MEDIA_H
 
 #include <stdint.h>
 #include <stdarg.h>
 
-#define SXPLAYER_VERSION_MAJOR @version_major@
-#define SXPLAYER_VERSION_MINOR @version_minor@
-#define SXPLAYER_VERSION_MICRO @version_micro@
+#define NMD_VERSION_MAJOR @version_major@
+#define NMD_VERSION_MINOR @version_minor@
+#define NMD_VERSION_MICRO @version_micro@
 
-#define SXPLAYER_GET_VERSION(major, minor, micro) ((major)<<16 | (minor)<<8 | (micro))
+#define NMD_GET_VERSION(major, minor, micro) ((major)<<16 | (minor)<<8 | (micro))
 
-#define SXPLAYER_VERSION_INT SXPLAYER_GET_VERSION(SXPLAYER_VERSION_MAJOR, \
-                                                  SXPLAYER_VERSION_MINOR, \
-                                                  SXPLAYER_VERSION_MICRO)
+#define NMD_VERSION_INT NMD_GET_VERSION(NMD_VERSION_MAJOR, NMD_VERSION_MINOR, NMD_VERSION_MICRO)
 
 #if defined(_WIN32)
-#  if defined(BUILD_SXPLAYER_SHARED_LIB) /* On Windows, we need to export the symbols while building */
-#    define SXAPI __declspec(dllexport)
-#  elif defined(USE_SXPLAYER_STATIC_LIB) /* Static library users don't need anything special */
-#    define SXAPI
+#  if defined(BUILD_NOPE_MEDIA_SHARED_LIB) /* On Windows, we need to export the symbols while building */
+#    define NMDAPI __declspec(dllexport)
+#  elif defined(USE_NOPE_MEDIA_STATIC_LIB) /* Static library users don't need anything special */
+#    define NMDAPI
 #  else
-#    define SXAPI __declspec(dllimport)  /* Dynamic library users (default) need a DLL import spec */
+#    define NMDAPI __declspec(dllimport)  /* Dynamic library users (default) need a DLL import spec */
 #  endif
 #else
-#  define SXAPI __attribute__((visibility("default"))) /* This cancel the hidden GNU symbol visibility attribute */
+#  define NMDAPI __attribute__((visibility("default"))) /* This cancel the hidden GNU symbol visibility attribute */
 #endif
-
-/* Stupeflix Media Player */
 
 /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
  *
@@ -73,109 +69,109 @@
  *
  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
 
-struct sxplayer_ctx;
+struct nmd_ctx;
 
-enum sxplayer_media_selection {
-    SXPLAYER_SELECT_VIDEO,
-    SXPLAYER_SELECT_AUDIO,
-    NB_SXPLAYER_MEDIA_SELECTION // *NOT* part of the API/ABI
+enum nmd_media_selection {
+    NMD_SELECT_VIDEO,
+    NMD_SELECT_AUDIO,
+    NB_NMD_MEDIA_SELECTION // *NOT* part of the API/ABI
 };
 
-enum sxplayer_pixel_format {
-    SXPLAYER_PIXFMT_NONE = -1,
-    SXPLAYER_PIXFMT_RGBA,
-    SXPLAYER_PIXFMT_BGRA,
-    SXPLAYER_PIXFMT_VT,        // VideoToolBox pixel format (HW accelerated, frame->data/frame->datap[0] is a CVPixelBufferRef)
-    SXPLAYER_PIXFMT_MEDIACODEC,// MediaCodec pixel format (HW accelerated, frame->data/frame->datap[0] is a AVMediaCodecBuffer)
-    SXPLAYER_SMPFMT_FLT,
-    SXPLAYER_PIXFMT_VAAPI,     // VAAPI pixel format (HW accelerated, frame->data/frame->datap[0] is a VASurfaceID)
-    SXPLAYER_PIXFMT_AUTO,
-    SXPLAYER_PIXFMT_NV12,
-    SXPLAYER_PIXFMT_YUV420P,
-    SXPLAYER_PIXFMT_YUV422P,
-    SXPLAYER_PIXFMT_YUV444P,
-    SXPLAYER_PIXFMT_P010LE,
-    SXPLAYER_PIXFMT_YUV420P10LE,
-    SXPLAYER_PIXFMT_YUV422P10LE,
-    SXPLAYER_PIXFMT_YUV444P10LE,
+enum nmd_pixel_format {
+    NMD_PIXFMT_NONE = -1,
+    NMD_PIXFMT_RGBA,
+    NMD_PIXFMT_BGRA,
+    NMD_PIXFMT_VT,        // VideoToolBox pixel format (HW accelerated, frame->data/frame->datap[0] is a CVPixelBufferRef)
+    NMD_PIXFMT_MEDIACODEC,// MediaCodec pixel format (HW accelerated, frame->data/frame->datap[0] is a AVMediaCodecBuffer)
+    NMD_SMPFMT_FLT,
+    NMD_PIXFMT_VAAPI,     // VAAPI pixel format (HW accelerated, frame->data/frame->datap[0] is a VASurfaceID)
+    NMD_PIXFMT_AUTO,
+    NMD_PIXFMT_NV12,
+    NMD_PIXFMT_YUV420P,
+    NMD_PIXFMT_YUV422P,
+    NMD_PIXFMT_YUV444P,
+    NMD_PIXFMT_P010LE,
+    NMD_PIXFMT_YUV420P10LE,
+    NMD_PIXFMT_YUV422P10LE,
+    NMD_PIXFMT_YUV444P10LE,
 };
 
-enum sxplayer_loglevel {
-    SXPLAYER_LOG_VERBOSE,
-    SXPLAYER_LOG_DEBUG,
-    SXPLAYER_LOG_INFO,
-    SXPLAYER_LOG_WARNING,
-    SXPLAYER_LOG_ERROR,
-};
-
-enum {
-    SXPLAYER_COL_SPC_RGB,
-    SXPLAYER_COL_SPC_BT709,
-    SXPLAYER_COL_SPC_UNSPECIFIED,
-    SXPLAYER_COL_SPC_RESERVED,
-    SXPLAYER_COL_SPC_FCC,
-    SXPLAYER_COL_SPC_BT470BG,
-    SXPLAYER_COL_SPC_SMPTE170M,
-    SXPLAYER_COL_SPC_SMPTE240M,
-    SXPLAYER_COL_SPC_YCGCO,
-    SXPLAYER_COL_SPC_BT2020_NCL,
-    SXPLAYER_COL_SPC_BT2020_CL,
-    SXPLAYER_COL_SPC_SMPTE2085,
-    SXPLAYER_COL_SPC_CHROMA_DERIVED_NCL,
-    SXPLAYER_COL_SPC_CHROMA_DERIVED_CL,
-    SXPLAYER_COL_SPC_ICTCP,
-    NB_SXPLAYER_COL_SPC // *NOT* part of API/ABI
+enum nmd_loglevel {
+    NMD_LOG_VERBOSE,
+    NMD_LOG_DEBUG,
+    NMD_LOG_INFO,
+    NMD_LOG_WARNING,
+    NMD_LOG_ERROR,
 };
 
 enum {
-    SXPLAYER_COL_RNG_UNSPECIFIED,
-    SXPLAYER_COL_RNG_LIMITED,
-    SXPLAYER_COL_RNG_FULL,
-    NB_SXPLAYER_COL_RNG // *NOT* part of API/ABI
+    NMD_COL_SPC_RGB,
+    NMD_COL_SPC_BT709,
+    NMD_COL_SPC_UNSPECIFIED,
+    NMD_COL_SPC_RESERVED,
+    NMD_COL_SPC_FCC,
+    NMD_COL_SPC_BT470BG,
+    NMD_COL_SPC_SMPTE170M,
+    NMD_COL_SPC_SMPTE240M,
+    NMD_COL_SPC_YCGCO,
+    NMD_COL_SPC_BT2020_NCL,
+    NMD_COL_SPC_BT2020_CL,
+    NMD_COL_SPC_SMPTE2085,
+    NMD_COL_SPC_CHROMA_DERIVED_NCL,
+    NMD_COL_SPC_CHROMA_DERIVED_CL,
+    NMD_COL_SPC_ICTCP,
+    NB_NMD_COL_SPC // *NOT* part of API/ABI
 };
 
 enum {
-    SXPLAYER_COL_PRI_RESERVED0,
-    SXPLAYER_COL_PRI_BT709,
-    SXPLAYER_COL_PRI_UNSPECIFIED,
-    SXPLAYER_COL_PRI_RESERVED,
-    SXPLAYER_COL_PRI_BT470M,
-    SXPLAYER_COL_PRI_BT470BG,
-    SXPLAYER_COL_PRI_SMPTE170M,
-    SXPLAYER_COL_PRI_SMPTE240M,
-    SXPLAYER_COL_PRI_FILM,
-    SXPLAYER_COL_PRI_BT2020,
-    SXPLAYER_COL_PRI_SMPTE428,
-    SXPLAYER_COL_PRI_SMPTE431,
-    SXPLAYER_COL_PRI_SMPTE432,
-    SXPLAYER_COL_PRI_JEDEC_P22,
-    NB_SXPLAYER_COL_PRI // *NOT* part of API/ABI
+    NMD_COL_RNG_UNSPECIFIED,
+    NMD_COL_RNG_LIMITED,
+    NMD_COL_RNG_FULL,
+    NB_NMD_COL_RNG // *NOT* part of API/ABI
 };
 
 enum {
-    SXPLAYER_COL_TRC_RESERVED0,
-    SXPLAYER_COL_TRC_BT709,
-    SXPLAYER_COL_TRC_UNSPECIFIED,
-    SXPLAYER_COL_TRC_RESERVED,
-    SXPLAYER_COL_TRC_GAMMA22,
-    SXPLAYER_COL_TRC_GAMMA28,
-    SXPLAYER_COL_TRC_SMPTE170M,
-    SXPLAYER_COL_TRC_SMPTE240M,
-    SXPLAYER_COL_TRC_LINEAR,
-    SXPLAYER_COL_TRC_LOG,
-    SXPLAYER_COL_TRC_LOG_SQRT,
-    SXPLAYER_COL_TRC_IEC61966_2_4,
-    SXPLAYER_COL_TRC_BT1361_ECG,
-    SXPLAYER_COL_TRC_IEC61966_2_1,
-    SXPLAYER_COL_TRC_BT2020_10,
-    SXPLAYER_COL_TRC_BT2020_12,
-    SXPLAYER_COL_TRC_SMPTE2084,
-    SXPLAYER_COL_TRC_SMPTE428,
-    SXPLAYER_COL_TRC_ARIB_STD_B67,
-    NB_SXPLAYER_COL_TRC // *NOT* part of the API/ABI
+    NMD_COL_PRI_RESERVED0,
+    NMD_COL_PRI_BT709,
+    NMD_COL_PRI_UNSPECIFIED,
+    NMD_COL_PRI_RESERVED,
+    NMD_COL_PRI_BT470M,
+    NMD_COL_PRI_BT470BG,
+    NMD_COL_PRI_SMPTE170M,
+    NMD_COL_PRI_SMPTE240M,
+    NMD_COL_PRI_FILM,
+    NMD_COL_PRI_BT2020,
+    NMD_COL_PRI_SMPTE428,
+    NMD_COL_PRI_SMPTE431,
+    NMD_COL_PRI_SMPTE432,
+    NMD_COL_PRI_JEDEC_P22,
+    NB_NMD_COL_PRI // *NOT* part of API/ABI
 };
 
-struct sxplayer_frame {
+enum {
+    NMD_COL_TRC_RESERVED0,
+    NMD_COL_TRC_BT709,
+    NMD_COL_TRC_UNSPECIFIED,
+    NMD_COL_TRC_RESERVED,
+    NMD_COL_TRC_GAMMA22,
+    NMD_COL_TRC_GAMMA28,
+    NMD_COL_TRC_SMPTE170M,
+    NMD_COL_TRC_SMPTE240M,
+    NMD_COL_TRC_LINEAR,
+    NMD_COL_TRC_LOG,
+    NMD_COL_TRC_LOG_SQRT,
+    NMD_COL_TRC_IEC61966_2_4,
+    NMD_COL_TRC_BT1361_ECG,
+    NMD_COL_TRC_IEC61966_2_1,
+    NMD_COL_TRC_BT2020_10,
+    NMD_COL_TRC_BT2020_12,
+    NMD_COL_TRC_SMPTE2084,
+    NMD_COL_TRC_SMPTE428,
+    NMD_COL_TRC_ARIB_STD_B67,
+    NB_NMD_COL_TRC // *NOT* part of the API/ABI
+};
+
+struct nmd_frame {
     uint8_t *data;      // frame data in RGBA, BGRA, ... according to pix_fmt. Deprecated, use datap instead
     double ts;          // video timestamp
     int linesize;       // linesize in bytes (includes padding). Deprecated, use linesizep instead
@@ -184,21 +180,21 @@ struct sxplayer_frame {
     int nb_samples;     // number of audio samples contained in the frame
     };
     int height;         // frame height in pixel
-    int pix_fmt;        // sxplayer_pixel_format
+    int pix_fmt;        // nmd_pixel_format
     void *mvs;          // motions vectors (AVMotionVector*)
     int nb_mvs;         // number of motions vectors
     int64_t ms;         // video timestamp in microseconds
     int64_t pts;        // video presentation time stamp in stream timebase unit
-    void *internal;     // sxplayer internal frame context frame, do not alter
-    int color_space;    // video color space (any of SXPLAYER_COL_CSP_*)
-    int color_range;    // video color range (any of SXPLAYER_COL_RNG_*)
-    int color_primaries;// video color primaries (any of SXPLAYER_COL_PRI_*)
-    int color_trc;      // video color transfer (any of SXPLAYER_COL_TRC_*)
+    void *internal;     // nmd internal frame context frame, do not alter
+    int color_space;    // video color space (any of NMD_COL_CSP_*)
+    int color_range;    // video color range (any of NMD_COL_RNG_*)
+    int color_primaries;// video color primaries (any of NMD_COL_PRI_*)
+    int color_trc;      // video color transfer (any of NMD_COL_TRC_*)
     uint8_t *datap[8];  // pointer to the frame planes
     int linesizep[8];   // linesize in bytes of each planes
 };
 
-struct sxplayer_info {
+struct nmd_info {
     int width;
     int height;
     double duration;
@@ -211,21 +207,21 @@ struct sxplayer_info {
  *
  * @param filename media input file name
  */
-SXAPI struct sxplayer_ctx *sxplayer_create(const char *filename);
+NMDAPI struct nmd_ctx *nmd_create(const char *filename);
 
 /**
  * Type of the user log callback
  *
  * @param arg       opaque user argument
- * @param level     log level of the message (SXPLAYER_LOG_*)
+ * @param level     log level of the message (NMD_LOG_*)
  * @param filename  source filename
  * @param ln        line number in the source file
  * @param fn        function name in the source
  * @param fmt       log string format
  * @param vl        variable argument list associated with the format
  */
-typedef void (*sxplayer_log_callback_type)(void *arg, int level, const char *filename,
-                                           int ln, const char *fn, const char *fmt, va_list vl);
+typedef void (*nmd_log_callback_type)(void *arg, int level, const char *filename,
+                                      int ln, const char *fn, const char *fmt, va_list vl);
 
 /**
  * Set user logging callback
@@ -238,7 +234,7 @@ typedef void (*sxplayer_log_callback_type)(void *arg, int level, const char *fil
  *                  the callback
  * @param callback  custom user logging callback
  */
-SXAPI void sxplayer_set_log_callback(struct sxplayer_ctx *s, void *arg, sxplayer_log_callback_type callback);
+NMDAPI void nmd_set_log_callback(struct nmd_ctx *s, void *arg, nmd_log_callback_type callback);
 
 /**
  * Set an option.
@@ -247,7 +243,7 @@ SXAPI void sxplayer_set_log_callback(struct sxplayer_ctx *s, void *arg, sxplayer
  *
  *   key                      type      description
  *   ----------------------------------------------
- *   avselect                 integer   select audio or video stream (see SXPLAYER_SELECT_*)
+ *   avselect                 integer   select audio or video stream (see NMD_SELECT_*)
  *   start_time               double    start time of the video
  *   end_time                 double    end time of the video
  *   skip                     double    alias for start_time (deprecated)
@@ -256,11 +252,11 @@ SXAPI void sxplayer_set_log_callback(struct sxplayer_ctx *s, void *arg, sxplayer
  *   max_nb_frames            integer   maximum number of frames in the queue
  *   filters                  string    custom user filters (software decoding only)
  *   sw_pix_fmt               integer   pixel format format to use when using software decoding (video only),
- *                                      can be any SXPLAYER_PIXFMT_* not HW accelerated. If sw_pix_fmt is set
- *                                      to SXPLAYER_PIXFMT_AUTO, sxplayer automatically selects a pixel format
+ *                                      can be any NMD_PIXFMT_* not HW accelerated. If sw_pix_fmt is set
+ *                                      to NMD_PIXFMT_AUTO, nope.media automatically selects a pixel format
  *                                      based on the intersection between the decoder output pixel format and
- *                                      the list of non-HW accelerated formats supported by sxplayer (SXPLAYER_PIXFMT_*).
- *                                      If the decoder output format is not supported, sxplayer fallbacks to RGBA.
+ *                                      the list of non-HW accelerated formats supported by nope.media (NMD_PIXFMT_*).
+ *                                      If the decoder output format is not supported, nope.media fallbacks to RGBA.
  *   autorotate               integer   automatically insert rotation filters (video software decoding only)
  *   auto_hwaccel             integer   attempt to enable hardware acceleration
  *   export_mvs               integer   export motion vectors into frame->mvs
@@ -273,28 +269,28 @@ SXAPI void sxplayer_set_log_callback(struct sxplayer_ctx *s, void *arg, sxplayer
  *   stream_idx               integer   force a stream number instead of picking the "best" one (note: stream MUST be of type avselect)
  *   use_pkt_duration         integer   use packet duration instead of decoding the next frame to get the next frame pts
  */
-SXAPI int sxplayer_set_option(struct sxplayer_ctx *s, const char *key, ...);
+NMDAPI int nmd_set_option(struct nmd_ctx *s, const char *key, ...);
 
 /**
  * Get the media duration (clipped to end_time if set).
  *
  * The duration is expressed in seconds.
  */
-SXAPI int sxplayer_get_duration(struct sxplayer_ctx *s, double *duration);
+NMDAPI int nmd_get_duration(struct nmd_ctx *s, double *duration);
 
 /**
  * Get various information on the media.
  */
-SXAPI int sxplayer_get_info(struct sxplayer_ctx *s, struct sxplayer_info *info);
+NMDAPI int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info);
 
 /**
  * Get the frame at an absolute time.
  *
  * The returned frame can be NULL if unchanged from last call.
  *
- * The returned frame needs to be released using sxplayer_release_frame().
+ * The returned frame needs to be released using nmd_release_frame().
  *
- * Requesting a negative time is equivalent to calling sxplayer_prefetch().
+ * Requesting a negative time is equivalent to calling nmd_prefetch().
  *
  * If you are working on a player (which typically needs seeking and has a
  * refresh rate architecture), this is the function you are probably interested
@@ -303,12 +299,12 @@ SXAPI int sxplayer_get_info(struct sxplayer_ctx *s, struct sxplayer_info *info);
  * The function is blocking, it will make sure any asynchronous operation
  * previously requested (start, seek, stop) is honored before returning.
  */
-SXAPI struct sxplayer_frame *sxplayer_get_frame(struct sxplayer_ctx *s, double t);
+NMDAPI struct nmd_frame *nmd_get_frame(struct nmd_ctx *s, double t);
 
 /**
- * Same as sxplayer_get_frame, but with timestamp expressed in microseconds.
+ * Same as nmd_get_frame, but with timestamp expressed in microseconds.
  */
-SXAPI struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64_t ms);
+NMDAPI struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t ms);
 
 /**
  * Request a playback start to the player.
@@ -318,7 +314,7 @@ SXAPI struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64
  *
  * Return 0 on success, a negative value on error.
  */
-SXAPI int sxplayer_start(struct sxplayer_ctx *s);
+NMDAPI int nmd_start(struct nmd_ctx *s);
 
 /**
  * Request a stop to the player to liberate playback ressources.
@@ -328,7 +324,7 @@ SXAPI int sxplayer_start(struct sxplayer_ctx *s);
  *
  * Return 0 on success, a negative value on error.
  */
-SXAPI int sxplayer_stop(struct sxplayer_ctx *s);
+NMDAPI int nmd_stop(struct nmd_ctx *s);
 
 /**
  * Request a seek to the player at a given time.
@@ -340,30 +336,30 @@ SXAPI int sxplayer_stop(struct sxplayer_ctx *s);
  *
  * Return 0 on success, a negative value on error.
  */
-SXAPI int sxplayer_seek(struct sxplayer_ctx *s, double t);
+NMDAPI int nmd_seek(struct nmd_ctx *s, double t);
 
 /**
  * Get the next frame.
  *
- * The returned frame needs to be released using sxplayer_release_frame().
+ * The returned frame needs to be released using nmd_release_frame().
  *
- * At EOF sxplayer_get_next_frame() will return NULL. You can call
- * sxplayer_get_next_frame() to restart the decoding from the beginning.
+ * At EOF nmd_get_next_frame() will return NULL. You can call
+ * nmd_get_next_frame() to restart the decoding from the beginning.
  *
  * If you want to process every single frame of the media regardless of a
  * "refresh rate" or seeking needs, this is the function you are probably
  * interested in. You can still use this function in combination with
- * sxplayer_get_frame() in case you need seeking.
+ * nmd_get_frame() in case you need seeking.
  */
-SXAPI struct sxplayer_frame *sxplayer_get_next_frame(struct sxplayer_ctx *s);
+NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
 
 /* Enable or disable the droping of non reference frames */
-SXAPI int sxplayer_set_drop_ref(struct sxplayer_ctx *s, int drop);
+NMDAPI int nmd_set_drop_ref(struct nmd_ctx *s, int drop);
 
-/* Release a frame obtained with sxplayer_get_frame() */
-SXAPI void sxplayer_release_frame(struct sxplayer_frame *frame);
+/* Release a frame obtained with nmd_get_frame() */
+NMDAPI void nmd_release_frame(struct nmd_frame *frame);
 
 /* Close and free everything */
-SXAPI void sxplayer_free(struct sxplayer_ctx **ss);
+NMDAPI void nmd_free(struct nmd_ctx **ss);
 
 #endif

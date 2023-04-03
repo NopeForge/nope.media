@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -40,7 +40,7 @@ struct demuxing_ctx {
     AVThreadMessageQueue *pkt_queue;
 };
 
-struct demuxing_ctx *sxpi_demuxing_alloc(void)
+struct demuxing_ctx *nmdi_demuxing_alloc(void)
 {
     struct demuxing_ctx *ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
@@ -50,7 +50,7 @@ struct demuxing_ctx *sxpi_demuxing_alloc(void)
 
 // XXX: we should probably prefer the stream duration over the format
 // duration
-int64_t sxpi_demuxing_probe_duration(const struct demuxing_ctx *ctx)
+int64_t nmdi_demuxing_probe_duration(const struct demuxing_ctx *ctx)
 {
     if (!ctx->is_image) {
         int64_t probe_duration64 = ctx->fmt_ctx->duration;
@@ -67,7 +67,7 @@ int64_t sxpi_demuxing_probe_duration(const struct demuxing_ctx *ctx)
     return AV_NOPTS_VALUE;
 }
 
-double sxpi_demuxing_probe_rotation(const struct demuxing_ctx *ctx)
+double nmdi_demuxing_probe_rotation(const struct demuxing_ctx *ctx)
 {
     AVStream *st = (AVStream *)ctx->stream; // XXX: Fix FFmpeg.
     AVDictionaryEntry *rotate_tag = av_dict_get(st->metadata, "rotate", NULL, 0);
@@ -86,22 +86,22 @@ double sxpi_demuxing_probe_rotation(const struct demuxing_ctx *ctx)
     return theta;
 }
 
-const AVStream *sxpi_demuxing_get_stream(const struct demuxing_ctx *ctx)
+const AVStream *nmdi_demuxing_get_stream(const struct demuxing_ctx *ctx)
 {
     return ctx->stream;
 }
 
-int sxpi_demuxing_is_image(const struct demuxing_ctx *ctx)
+int nmdi_demuxing_is_image(const struct demuxing_ctx *ctx)
 {
     return ctx->is_image;
 }
 
-int sxpi_demuxing_init(void *log_ctx,
+int nmdi_demuxing_init(void *log_ctx,
                        struct demuxing_ctx *ctx,
                        AVThreadMessageQueue *src_queue,
                        AVThreadMessageQueue *pkt_queue,
                        const char *filename,
-                       const struct sxplayer_opts *opts)
+                       const struct nmdi_opts *opts)
 {
     enum AVMediaType media_type;
 
@@ -112,8 +112,8 @@ int sxpi_demuxing_init(void *log_ctx,
     ctx->pkt_skip_mod = opts->pkt_skip_mod;
 
     switch (opts->avselect) {
-    case SXPLAYER_SELECT_VIDEO: media_type = AVMEDIA_TYPE_VIDEO; break;
-    case SXPLAYER_SELECT_AUDIO: media_type = AVMEDIA_TYPE_AUDIO; break;
+    case NMD_SELECT_VIDEO: media_type = AVMEDIA_TYPE_VIDEO; break;
+    case NMD_SELECT_AUDIO: media_type = AVMEDIA_TYPE_AUDIO; break;
     default:
         av_assert0(0);
     }
@@ -190,7 +190,7 @@ static int pull_packet(struct demuxing_ctx *ctx, AVPacket *pkt)
     return ret;
 }
 
-void sxpi_demuxing_run(struct demuxing_ctx *ctx)
+void nmdi_demuxing_run(struct demuxing_ctx *ctx)
 {
     int ret;
     int in_err, out_err;
@@ -218,7 +218,7 @@ void sxpi_demuxing_run(struct demuxing_ctx *ctx)
                 LOG(ctx, INFO, "Seek in media at ts=%s", PTS2TIMESTR(seek_to));
                 ret = avformat_seek_file(ctx->fmt_ctx, -1, INT64_MIN, seek_to, seek_to, 0);
                 if (ret < 0) {
-                    sxpi_msg_free_data(&msg);
+                    nmdi_msg_free_data(&msg);
                     break;
                 }
             }
@@ -226,7 +226,7 @@ void sxpi_demuxing_run(struct demuxing_ctx *ctx)
             /* Forward the message */
             ret = av_thread_message_queue_send(ctx->pkt_queue, &msg, 0);
             if (ret < 0) {
-                sxpi_msg_free_data(&msg);
+                nmdi_msg_free_data(&msg);
                 break;
             }
         }
@@ -272,7 +272,7 @@ void sxpi_demuxing_run(struct demuxing_ctx *ctx)
     av_thread_message_queue_set_err_recv(ctx->pkt_queue, out_err);
 }
 
-void sxpi_demuxing_free(struct demuxing_ctx **ctxp)
+void nmdi_demuxing_free(struct demuxing_ctx **ctxp)
 {
     struct demuxing_ctx *ctx = *ctxp;
     if (!ctx)

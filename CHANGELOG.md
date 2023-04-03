@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Project is forked and renamed to nope.media
+
 ## [9.14.0] - 2023-03-09
 ### Added
 - Support for log messages of any length
@@ -53,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [9.9.0] - 2021-06-10
 ### Added
 - Automatic software pixel format selection
-- New datap and linesizep fields to sxplayer frame
+- New datap and linesizep fields to frame
 - NV12, YUV420P, YUV422P, YUV444P support
 - P010LE, YUV420PLE, YUV422P10LE, YUV444P10LE support
 

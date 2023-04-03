@@ -1,5 +1,5 @@
 project(
-  'sxplayer',
+  'nope.media',
   'c',
   default_options: ['c_std=c99'],
   license: 'LGPL-2.1',
@@ -89,17 +89,17 @@ lib_src = files(
 
 lib_c_args = []
 if get_option('default_library') == 'shared'
-  lib_c_args += '-DBUILD_SXPLAYER_SHARED_LIB'
+  lib_c_args += '-DBUILD_NOPE_MEDIA_SHARED_LIB'
 else
-  lib_c_args += '-DUSE_SXPLAYER_STATIC_LIB'
+  lib_c_args += '-DUSE_NOPE_MEDIA_STATIC_LIB'
 endif
 
 if host_system == 'darwin'
   lib_src += files('src/decoder_vt.c')
 endif
 
-libsxplayer = library(
-  'sxplayer',
+libnopemd = library(
+  'nopemd',
   lib_src,
   dependencies: lib_deps,
   install: true,
@@ -110,25 +110,25 @@ libsxplayer = library(
 )
 
 lib_header = configure_file(
-  input: files('src/sxplayer.h.in'),
-  output: 'sxplayer.h',
+  input: files('src/nopemd.h.in'),
+  output: 'nopemd.h',
   configuration: conf_data
 )
 install_headers(lib_header)
 if get_option('cpp-header')
-  install_headers(files('src/sxplayer.hpp'))
+  install_headers(files('src/nopemd.hpp'))
 endif
 
 pkg = import('pkgconfig')
 pkg_extra_cflags = []
 if get_option('default_library') == 'static'
-  pkg_extra_cflags += '-DUSE_SXPLAYER_STATIC_LIB'
+  pkg_extra_cflags += '-DUSE_NOPE_MEDIA_STATIC_LIB'
 endif
 
 pkg.generate(
-  libsxplayer,
-  name: 'libsxplayer',  # not specifying the name would fallback on "sxplayer.pc" instead of "libsxplayer.pc"
-  description: 'Stupeflix Player library',
+  libnopemd,
+  name: 'libnopemd',  # not specifying the name would fallback on "nopemd.pc" instead of "libnopemd.pc"
+  description: 'nope.media library',
   extra_cflags: pkg_extra_cflags,
 )
 
@@ -146,10 +146,10 @@ foreach dep : player_deps
 endforeach
 if player_deps_found
   player = executable(
-    'sxplayer',
-    files('src/sxplayer.c'),
+    'nope-media',
+    files('src/nope-media.c'),
     dependencies: player_deps,
-    link_with: libsxplayer,
+    link_with: libnopemd,
     install: true,
     install_rpath: install_rpath,
   )
@@ -184,7 +184,7 @@ if get_option('tests')
       'test_' + exe_name,
       files('tests/test_@0@.c'.format(exe_name)),
       dependencies: lib_deps,
-      link_with: libsxplayer,
+      link_with: libnopemd,
       install: false,
       # pkg-config extra cflags don't apply to local executables, so we have to
       # transfer them manually. Alternatively, we could create a virtual

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
-#include <sxplayer.h>
+#include <nopemd.h>
 
 int main(int ac, char **av)
 {
@@ -14,19 +14,19 @@ int main(int ac, char **av)
     const char *filename = av[1];
     const int use_pkt_duration = ac > 2 ? atoi(av[2]) : 0;
 
-    struct sxplayer_ctx *s1 = sxplayer_create(filename);
-    struct sxplayer_ctx *s2 = sxplayer_create(filename);
-    struct sxplayer_frame *f1, *f2;
+    struct nmd_ctx *s1 = nmd_create(filename);
+    struct nmd_ctx *s2 = nmd_create(filename);
+    struct nmd_frame *f1, *f2;
 
     if (!s1 || !s2)
         return -1;
 
-    sxplayer_set_option(s1, "auto_hwaccel", 0);
-    sxplayer_set_option(s1, "use_pkt_duration", use_pkt_duration);
-    sxplayer_set_option(s2, "auto_hwaccel", 0);
-    sxplayer_set_option(s2, "use_pkt_duration", use_pkt_duration);
-    f1 = sxplayer_get_frame(s1, 3.0);
-    f2 = sxplayer_get_frame_ms(s2, 3*1000000);
+    nmd_set_option(s1, "auto_hwaccel", 0);
+    nmd_set_option(s1, "use_pkt_duration", use_pkt_duration);
+    nmd_set_option(s2, "auto_hwaccel", 0);
+    nmd_set_option(s2, "use_pkt_duration", use_pkt_duration);
+    f1 = nmd_get_frame(s1, 3.0);
+    f2 = nmd_get_frame_ms(s2, 3*1000000);
     if (!f1 || !f2)
         return -1;
 
@@ -40,9 +40,9 @@ int main(int ac, char **av)
         return -1;
     }
 
-    sxplayer_release_frame(f1);
-    sxplayer_release_frame(f2);
-    sxplayer_free(&s1);
-    sxplayer_free(&s2);
+    nmd_release_frame(f1);
+    nmd_release_frame(f2);
+    nmd_free(&s1);
+    nmd_free(&s2);
     return 0;
 }

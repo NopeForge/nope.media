@@ -1,14 +1,14 @@
-# sxplayer
+# nope.media
 
-![tests Linux](https://github.com/gopro/sxplayer/workflows/tests%20Linux/badge.svg)
-![tests Mac](https://github.com/gopro/sxplayer/workflows/tests%20Mac/badge.svg)
-![tests Windows](https://github.com/gopro/sxplayer/workflows/tests%20Windows/badge.svg)
-![build Android 🤖](https://github.com/gopro/sxplayer/workflows/build%20Android%20🤖/badge.svg)
-![build iOS 🍏](https://github.com/gopro/sxplayer/workflows/build%20iOS%20🍏/badge.svg)
+![tests Linux](https://github.com/nope-project/nope.media/workflows/tests%20Linux/badge.svg)
+![tests Mac](https://github.com/nope-project/nope.media/workflows/tests%20Mac/badge.svg)
+![tests Windows](https://github.com/nope-project/nope.media/workflows/tests%20Windows/badge.svg)
+![build Android 🤖](https://github.com/nope-project/nope.media/workflows/build%20Android%20🤖/badge.svg)
+![build iOS 🍏](https://github.com/nope-project/nope.media/workflows/build%20iOS%20🍏/badge.svg)
 
 ## Introduction
 
-`sxplayer` stands for Stupeflix Player, a video frames fetching library.
+`nope.media` is a video player library for fetching frames at exact times.
 
 It can handle only one stream at a time, generally video. If audio is
 requested, the frame returned will be an instant video frame containing both
@@ -34,19 +34,19 @@ documentation][meson-doc] for more information.
 
 ## API Usage
 
-For API usage, refers to `sxplayer.h`.
+For API usage, refers to `nopemd.h`.
 
 
 ## Development
 
 ### Running tests
 
-Assuming sxplayer is built within a `builddir` directory (`meson builddir &&
-meson compile -C builddir`), the test can be run with meson using a command
+Assuming `nope.media` is built within a `builddir` directory (`meson builddir
+&& meson compile -C builddir`), the test can be run with meson using a command
 such as `meson test -C builddir -v`.
 
 The testing program itself (`test-prog`) can be found in the build directory,
-along a sample player tool named `sxplayer` (if its dependencies were met at
+along a sample player tool named `nope-media` (if its dependencies were met at
 build time), which can be used for other manual testing purposes.
 
 ### Infrastructure overview
@@ -59,15 +59,15 @@ build time), which can be used for other manual testing purposes.
               .                             .   .------------.               .-----------------------------------------------------.
               .                             .   | api.c      |               | control                                             |
               .                             .   +------------+               +-----------------------------------------------------+
-           ===.===  sxplayer_create() ======.==>|            |===  init  ===>|                                                     |
+           ===.===  nmd_create()      ======.==>|            |===  init  ===>|                                                     |
               .                             .   |            |---  start  -->|                    MANAGE THREADS                   |
-           ===.===  sxplayer_get_*frame() ==.==>|            |---  seek  --->|              _________/  |  \_______                |
+           ===.===  nmd_get_*frame()      ==.==>|            |---  seek  --->|              _________/  |  \_______                |
   USER        .                             .   |            |---  stop  --->|             /            |          \               |
-           ---.---  sxplayer_start() -------.-->|            |===  free  ===>|            /             |           \              |
-           ---.---  sxplayer_seek()  -------.-->|            |               |           v              v            v             |
-           ---.---  sxplayer_seek()  -------.-->|            |               |      .----------.  .----------.  .----------.       |
+           ---.---  nmd_start()      -------.-->|            |===  free  ===>|            /             |           \              |
+           ---.---  nmd_seek()       -------.-->|            |               |           v              v            v             |
+           ---.---  nmd_seek()       -------.-->|            |               |      .----------.  .----------.  .----------.       |
               .                             .   |            |               |      | demuxer  |  | decoder  |  | filterer |       |
-           ===.===  sxplayer_free()  =======.==>|            |               |      +----------+  +----------+  +----------+       |
+           ===.===  nmd_free()       =======.==>|            |               |      +----------+  +----------+  +----------+       |
               .                             .   |            |               |      | init     |  | init     |  | init     |       |
               .                             .   `------------'               |      +----------+  +----------+  +----------+       |
               .                             .                                |      |          |  |          |  |          |       |

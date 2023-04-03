@@ -2,7 +2,7 @@
 #include <libavutil/common.h>
 #include <float.h> // for DBL_MAX
 
-#include <sxplayer.h>
+#include <nopemd.h>
 
 #define BITS_PER_ACTION 4
 
@@ -16,19 +16,19 @@ enum action {
     NB_ACTIONS
 };
 
-static int action_prefetch(struct sxplayer_ctx *s, int opt_test_flags)
+static int action_prefetch(struct nmd_ctx *s, int opt_test_flags)
 {
-    return sxplayer_start(s);
+    return nmd_start(s);
 }
 
 #define FLAG_START_TIME    (1<<0)
 #define FLAG_END_TIME      (1<<1)
 #define FLAG_AUDIO         (1<<2)
 
-static int action_fetch_info(struct sxplayer_ctx *s, int opt_test_flags)
+static int action_fetch_info(struct nmd_ctx *s, int opt_test_flags)
 {
-    struct sxplayer_info info;
-    int ret = sxplayer_get_info(s, &info);
+    struct nmd_info info;
+    int ret = nmd_get_info(s, &info);
     if (ret < 0)
         return ret;
     if (opt_test_flags & FLAG_AUDIO) {
@@ -49,7 +49,7 @@ static int action_fetch_info(struct sxplayer_ctx *s, int opt_test_flags)
 #define TESTVAL_START_TIME  7.12
 #define TESTVAL_END_TIME   60.43
 
-static int check_frame(struct sxplayer_frame *f, double t, int opt_test_flags)
+static int check_frame(struct nmd_frame *f, double t, int opt_test_flags)
 {
     const double start_time    = (opt_test_flags & FLAG_START_TIME) ? TESTVAL_START_TIME :  0;
     const double end_time      = (opt_test_flags & FLAG_END_TIME)   ? TESTVAL_END_TIME   : -1;
@@ -97,26 +97,26 @@ static int check_frame(struct sxplayer_frame *f, double t, int opt_test_flags)
     return 0;
 }
 
-static int action_start(struct sxplayer_ctx *s, int opt_test_flags)
+static int action_start(struct nmd_ctx *s, int opt_test_flags)
 {
     int ret;
-    struct sxplayer_frame *frame = sxplayer_get_frame(s, 0);
+    struct nmd_frame *frame = nmd_get_frame(s, 0);
 
     if ((ret = check_frame(frame, 0, opt_test_flags)) < 0)
         return ret;
-    sxplayer_release_frame(frame);
+    nmd_release_frame(frame);
     return 0;
 }
 
-static int action_middle(struct sxplayer_ctx *s, int opt_test_flags)
+static int action_middle(struct nmd_ctx *s, int opt_test_flags)
 {
     int ret;
-    struct sxplayer_frame *f0 = sxplayer_get_frame(s, 30.0);
-    struct sxplayer_frame *f1 = sxplayer_get_frame(s, 30.1);
-    struct sxplayer_frame *f2 = sxplayer_get_frame(s, 30.2);
-    struct sxplayer_frame *f3 = sxplayer_get_frame(s, 15.0);
-    struct sxplayer_frame *f4 = sxplayer_get_next_frame(s);
-    struct sxplayer_frame *f5 = sxplayer_get_next_frame(s);
+    struct nmd_frame *f0 = nmd_get_frame(s, 30.0);
+    struct nmd_frame *f1 = nmd_get_frame(s, 30.1);
+    struct nmd_frame *f2 = nmd_get_frame(s, 30.2);
+    struct nmd_frame *f3 = nmd_get_frame(s, 15.0);
+    struct nmd_frame *f4 = nmd_get_next_frame(s);
+    struct nmd_frame *f5 = nmd_get_next_frame(s);
     const double increment = opt_test_flags & FLAG_AUDIO ? SOURCE_SPF/(float)SOURCE_FREQ
                                                          : 1./SOURCE_FPS;
 
@@ -128,16 +128,16 @@ static int action_middle(struct sxplayer_ctx *s, int opt_test_flags)
         (ret = check_frame(f5, 15.0 + 2*increment, opt_test_flags)) < 0)
         return ret;
 
-    sxplayer_release_frame(f0);
-    sxplayer_release_frame(f5);
-    sxplayer_release_frame(f1);
-    sxplayer_release_frame(f4);
-    sxplayer_release_frame(f2);
-    sxplayer_release_frame(f3);
+    nmd_release_frame(f0);
+    nmd_release_frame(f5);
+    nmd_release_frame(f1);
+    nmd_release_frame(f4);
+    nmd_release_frame(f2);
+    nmd_release_frame(f3);
 
-    f0 = sxplayer_get_next_frame(s);
-    f1 = sxplayer_get_frame(s, 16.0);
-    f2 = sxplayer_get_frame(s, 16.001);
+    f0 = nmd_get_next_frame(s);
+    f1 = nmd_get_frame(s, 16.0);
+    f2 = nmd_get_frame(s, 16.001);
 
     if ((ret = check_frame(f0, 15.0 + 3*increment, opt_test_flags)) < 0 ||
         (ret = check_frame(f1, 16.0,               opt_test_flags)) < 0)
@@ -148,24 +148,24 @@ static int action_middle(struct sxplayer_ctx *s, int opt_test_flags)
         return -1;
     }
 
-    sxplayer_release_frame(f1);
-    sxplayer_release_frame(f0);
+    nmd_release_frame(f1);
+    nmd_release_frame(f0);
 
     return 0;
 }
 
-static int action_end(struct sxplayer_ctx *s, int opt_test_flags)
+static int action_end(struct nmd_ctx *s, int opt_test_flags)
 {
-    struct sxplayer_frame *f;
+    struct nmd_frame *f;
 
-    f = sxplayer_get_frame(s, 999999.0);
+    f = nmd_get_frame(s, 999999.0);
     if (!f)
         return -1;
-    sxplayer_release_frame(f);
+    nmd_release_frame(f);
 
-    f = sxplayer_get_frame(s, 99999.0);
+    f = nmd_get_frame(s, 99999.0);
     if (f) {
-        sxplayer_release_frame(f);
+        nmd_release_frame(f);
         return -1;
     }
 
@@ -174,7 +174,7 @@ static int action_end(struct sxplayer_ctx *s, int opt_test_flags)
 
 static const struct {
     const char *name;
-    int (*func)(struct sxplayer_ctx *s, int opt_test_flags);
+    int (*func)(struct nmd_ctx *s, int opt_test_flags);
 } actions_desc[] = {
     [ACTION_PREFETCH]   = {"prefetch",  action_prefetch},
     [ACTION_FETCH_INFO] = {"fetchinfo", action_fetch_info},
@@ -202,18 +202,18 @@ static void print_comb_name(uint64_t comb, int opt_test_flags)
 static int exec_comb(const char *filename, uint64_t comb, int opt_test_flags, int use_pkt_duration)
 {
     int ret = 0;
-    struct sxplayer_ctx *s = sxplayer_create(filename);
+    struct nmd_ctx *s = nmd_create(filename);
     if (!s)
         return -1;
 
-    sxplayer_set_option(s, "auto_hwaccel", 0);
-    sxplayer_set_option(s, "use_pkt_duration", use_pkt_duration);
+    nmd_set_option(s, "auto_hwaccel", 0);
+    nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
 
     print_comb_name(comb, opt_test_flags);
 
-    if (opt_test_flags & FLAG_START_TIME) sxplayer_set_option(s, "start_time", TESTVAL_START_TIME);
-    if (opt_test_flags & FLAG_END_TIME)   sxplayer_set_option(s, "end_time",   TESTVAL_END_TIME);
-    if (opt_test_flags & FLAG_AUDIO)      sxplayer_set_option(s, "avselect",   SXPLAYER_SELECT_AUDIO);
+    if (opt_test_flags & FLAG_START_TIME) nmd_set_option(s, "start_time", TESTVAL_START_TIME);
+    if (opt_test_flags & FLAG_END_TIME)   nmd_set_option(s, "end_time",   TESTVAL_END_TIME);
+    if (opt_test_flags & FLAG_AUDIO)      nmd_set_option(s, "avselect",   NMD_SELECT_AUDIO);
 
     for (int i = 0; i < NB_ACTIONS; i++) {
         const int action = GET_ACTION(comb, i);
@@ -224,7 +224,7 @@ static int exec_comb(const char *filename, uint64_t comb, int opt_test_flags, in
             break;
     }
 
-    sxplayer_free(&s);
+    nmd_free(&s);
     return ret;
 }
 

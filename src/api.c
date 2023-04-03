@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -33,18 +33,18 @@
 #include <libavutil/pixfmt.h>
 #include <libavutil/pixdesc.h>
 
-#include "sxplayer.h"
+#include "nopemd.h"
 #include "async.h"
 #include "log.h"
 #include "internal.h"
 
-struct sxplayer_ctx {
+struct nmd_ctx {
     const AVClass *class;                   // necessary for the AVOption mechanism
     struct log_ctx *log_ctx;
     char *filename;                         // input filename
     char *logname;
 
-    struct sxplayer_opts opts;
+    struct nmdi_opts opts;
 
     struct async_context *actx;
     int context_configured;
@@ -63,9 +63,9 @@ struct sxplayer_ctx {
     const char *cur_func_name;
 };
 
-#define OFFSET(x) offsetof(struct sxplayer_ctx, opts.x)
-static const AVOption sxplayer_options[] = {
-    { "avselect",               NULL, OFFSET(avselect),               AV_OPT_TYPE_INT,       {.i64=SXPLAYER_SELECT_VIDEO}, 0, NB_SXPLAYER_MEDIA_SELECTION-1 },
+#define OFFSET(x) offsetof(struct nmd_ctx, opts.x)
+static const AVOption options[] = {
+    { "avselect",               NULL, OFFSET(avselect),               AV_OPT_TYPE_INT,       {.i64=NMD_SELECT_VIDEO}, 0, NB_NMD_MEDIA_SELECTION-1 },
     { "start_time",             NULL, OFFSET(start_time),             AV_OPT_TYPE_DOUBLE,    {.dbl= 0},      0, DBL_MAX },
     { "end_time",               NULL, OFFSET(end_time),               AV_OPT_TYPE_DOUBLE,    {.dbl=-1},     -1, DBL_MAX },
     { "skip",                   NULL, OFFSET(skip),                   AV_OPT_TYPE_DOUBLE,    {.dbl= 0},      0, DBL_MAX },
@@ -75,7 +75,7 @@ static const AVOption sxplayer_options[] = {
     { "max_nb_frames",          NULL, OFFSET(max_nb_frames),          AV_OPT_TYPE_INT,       {.i64=2},       1, 100 },
     { "max_nb_sink",            NULL, OFFSET(max_nb_sink),            AV_OPT_TYPE_INT,       {.i64=2},       1, 100 },
     { "filters",                NULL, OFFSET(filters),                AV_OPT_TYPE_STRING,    {.str=NULL},    0,       0 },
-    { "sw_pix_fmt",             NULL, OFFSET(sw_pix_fmt),             AV_OPT_TYPE_INT,       {.i64=SXPLAYER_PIXFMT_BGRA},  0, INT_MAX },
+    { "sw_pix_fmt",             NULL, OFFSET(sw_pix_fmt),             AV_OPT_TYPE_INT,       {.i64=NMD_PIXFMT_BGRA},  0, INT_MAX },
     { "autorotate",             NULL, OFFSET(autorotate),             AV_OPT_TYPE_INT,       {.i64=0},       0, 1 },
     { "auto_hwaccel",           NULL, OFFSET(auto_hwaccel),           AV_OPT_TYPE_INT,       {.i64=1},       0, 1 },
     { "export_mvs",             NULL, OFFSET(export_mvs),             AV_OPT_TYPE_INT,       {.i64=0},       0, 1 },
@@ -90,19 +90,19 @@ static const AVOption sxplayer_options[] = {
     { NULL }
 };
 
-static const char *sxplayer_item_name(void *arg)
+static const char *item_name(void *arg)
 {
-    const struct sxplayer_ctx *s = arg;
+    const struct nmd_ctx *s = arg;
     return s->logname;
 }
 
-static const AVClass sxplayer_class = {
-    .class_name = "sxplayer",
-    .item_name  = sxplayer_item_name,
-    .option     = sxplayer_options,
+static const AVClass class = {
+    .class_name = "nope.media",
+    .item_name  = item_name,
+    .option     = options,
 };
 
-int sxplayer_set_option(struct sxplayer_ctx *s, const char *key, ...)
+int nmd_set_option(struct nmd_ctx *s, const char *key, ...)
 {
     va_list ap;
     int n, ret = 0;
@@ -151,36 +151,35 @@ end:
     return ret;
 }
 
-static void free_context(struct sxplayer_ctx *s)
+static void free_context(struct nmd_ctx *s)
 {
     if (!s)
         return;
     av_freep(&s->filename);
     av_freep(&s->logname);
-    sxpi_log_free(&s->log_ctx);
+    nmdi_log_free(&s->log_ctx);
     av_opt_free(s);
     av_freep(&s);
 }
 
 /* Destroy data allocated by configure_context() */
-static void free_temp_context_data(struct sxplayer_ctx *s)
+static void free_temp_context_data(struct nmd_ctx *s)
 {
     TRACE(s, "free temporary context data");
 
     av_frame_free(&s->cached_frame);
 
-    sxpi_async_free(&s->actx);
+    nmdi_async_free(&s->actx);
 
     s->context_configured = 0;
 }
 
-void sxplayer_set_log_callback(struct sxplayer_ctx *s, void *arg,
-                               sxplayer_log_callback_type callback)
+void nmd_set_log_callback(struct nmd_ctx *s, void *arg, nmd_log_callback_type callback)
 {
-    sxpi_log_set_callback(s->log_ctx, arg, callback);
+    nmdi_log_set_callback(s->log_ctx, arg, callback);
 }
 
-struct sxplayer_ctx *sxplayer_create(const char *filename)
+struct nmd_ctx *nmd_create(const char *filename)
 {
     const struct {
         const char *libname;
@@ -195,25 +194,25 @@ struct sxplayer_ctx *sxplayer_create(const char *filename)
 
     av_assert0(AV_TIME_BASE == 1000000);
 
-    struct sxplayer_ctx *s = av_mallocz(sizeof(*s));
+    struct nmd_ctx *s = av_mallocz(sizeof(*s));
     if (!s)
         return NULL;
 
     s->filename = av_strdup(filename);
-    s->logname  = av_asprintf("sxplayer:%s", av_basename(filename));
+    s->logname  = av_asprintf("nope.media:%s", av_basename(filename));
     if (!s->filename || !s->logname)
         goto fail;
 
-    s->class = &sxplayer_class;
+    s->class = &class;
 
     av_log_set_level(LOG_LEVEL);
 
-    s->log_ctx = sxpi_log_alloc();
-    if (!s->log_ctx || sxpi_log_init(s->log_ctx, s) < 0)
+    s->log_ctx = nmdi_log_alloc();
+    if (!s->log_ctx || nmdi_log_init(s->log_ctx, s) < 0)
         goto fail;
 
-    LOG(s, INFO, "libsxplayer %d.%d.%d",
-        SXPLAYER_VERSION_MAJOR, SXPLAYER_VERSION_MINOR, SXPLAYER_VERSION_MICRO);
+    LOG(s, INFO, "nope.media %d.%d.%d",
+        NMD_VERSION_MAJOR, NMD_VERSION_MINOR, NMD_VERSION_MICRO);
 
 #define VFMT(v) (v)>>16, (v)>>8 & 0xff, (v) & 0xff
     for (int i = 0; i < FF_ARRAY_ELEMS(fflibs); i++) {
@@ -242,9 +241,9 @@ fail:
     return NULL;
 }
 
-void sxplayer_free(struct sxplayer_ctx **ss)
+void nmd_free(struct nmd_ctx **ss)
 {
-    struct sxplayer_ctx *s = *ss;
+    struct nmd_ctx *s = *ss;
 
     if (!s)
         return;
@@ -259,18 +258,18 @@ void sxplayer_free(struct sxplayer_ctx **ss)
 /**
  * Map the timeline time to the media time
  */
-static int64_t get_media_time(const struct sxplayer_opts *o, int64_t t)
+static int64_t get_media_time(const struct nmdi_opts *o, int64_t t)
 {
     const int64_t mt = o->start_time64 + t;
     return o->end_time64 == AV_NOPTS_VALUE ? mt : FFMIN(mt, o->end_time64);
 }
 
-static int set_context_fields(struct sxplayer_ctx *s)
+static int set_context_fields(struct nmd_ctx *s)
 {
-    struct sxplayer_opts *o = &s->opts;
+    struct nmdi_opts *o = &s->opts;
 
-    if (o->sw_pix_fmt != SXPLAYER_PIXFMT_AUTO) {
-        const enum AVPixelFormat fmt = sxpi_pix_fmts_sx2ff(o->sw_pix_fmt);
+    if (o->sw_pix_fmt != NMD_PIXFMT_AUTO) {
+        const enum AVPixelFormat fmt = nmdi_pix_fmts_nmd2ff(o->sw_pix_fmt);
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
         if (!desc || (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
             LOG(s, ERROR, "Invalid software decoding pixel format specified");
@@ -328,11 +327,11 @@ static int set_context_fields(struct sxplayer_ctx *s)
           PTS2TIMESTR(o->dist_time_seek_trigger64));
 
     av_assert0(!s->actx);
-    s->actx = sxpi_async_alloc_context();
+    s->actx = nmdi_async_alloc_context();
     if (!s->actx)
         return AVERROR(ENOMEM);
 
-    int ret = sxpi_async_init(s->actx, s->log_ctx, s->filename, &s->opts);
+    int ret = nmdi_async_init(s->actx, s->log_ctx, s->filename, &s->opts);
     if (ret < 0)
         return ret;
 
@@ -344,9 +343,9 @@ static int set_context_fields(struct sxplayer_ctx *s)
 /**
  * This can not be done earlier inside the context allocation function because
  * it requires user option to be set, which is done between the context
- * allocation and the first call to sxplayer_get_*frame() or sxplayer_get_duration().
+ * allocation and the first call to nmd_get_*frame() or nmd_get_duration().
  */
-static int configure_context(struct sxplayer_ctx *s)
+static int configure_context(struct nmd_ctx *s)
 {
     if (s->context_configured)
         return 1;
@@ -363,101 +362,101 @@ static int configure_context(struct sxplayer_ctx *s)
 }
 
 static const int col_spc_map[] = {
-    [AVCOL_SPC_RGB]                = SXPLAYER_COL_SPC_RGB,
-    [AVCOL_SPC_BT709]              = SXPLAYER_COL_SPC_BT709,
-    [AVCOL_SPC_UNSPECIFIED]        = SXPLAYER_COL_SPC_UNSPECIFIED,
-    [AVCOL_SPC_RESERVED]           = SXPLAYER_COL_SPC_RESERVED,
-    [AVCOL_SPC_FCC]                = SXPLAYER_COL_SPC_FCC,
-    [AVCOL_SPC_BT470BG]            = SXPLAYER_COL_SPC_BT470BG,
-    [AVCOL_SPC_SMPTE170M]          = SXPLAYER_COL_SPC_SMPTE170M,
-    [AVCOL_SPC_SMPTE240M]          = SXPLAYER_COL_SPC_SMPTE240M,
-    [AVCOL_SPC_YCGCO]              = SXPLAYER_COL_SPC_YCGCO,
-    [AVCOL_SPC_BT2020_NCL]         = SXPLAYER_COL_SPC_BT2020_NCL,
-    [AVCOL_SPC_BT2020_CL]          = SXPLAYER_COL_SPC_BT2020_CL,
-    [AVCOL_SPC_SMPTE2085]          = SXPLAYER_COL_SPC_SMPTE2085,
-    [AVCOL_SPC_CHROMA_DERIVED_NCL] = SXPLAYER_COL_SPC_CHROMA_DERIVED_NCL,
-    [AVCOL_SPC_CHROMA_DERIVED_CL]  = SXPLAYER_COL_SPC_CHROMA_DERIVED_CL,
-    [AVCOL_SPC_ICTCP]              = SXPLAYER_COL_SPC_ICTCP,
+    [AVCOL_SPC_RGB]                = NMD_COL_SPC_RGB,
+    [AVCOL_SPC_BT709]              = NMD_COL_SPC_BT709,
+    [AVCOL_SPC_UNSPECIFIED]        = NMD_COL_SPC_UNSPECIFIED,
+    [AVCOL_SPC_RESERVED]           = NMD_COL_SPC_RESERVED,
+    [AVCOL_SPC_FCC]                = NMD_COL_SPC_FCC,
+    [AVCOL_SPC_BT470BG]            = NMD_COL_SPC_BT470BG,
+    [AVCOL_SPC_SMPTE170M]          = NMD_COL_SPC_SMPTE170M,
+    [AVCOL_SPC_SMPTE240M]          = NMD_COL_SPC_SMPTE240M,
+    [AVCOL_SPC_YCGCO]              = NMD_COL_SPC_YCGCO,
+    [AVCOL_SPC_BT2020_NCL]         = NMD_COL_SPC_BT2020_NCL,
+    [AVCOL_SPC_BT2020_CL]          = NMD_COL_SPC_BT2020_CL,
+    [AVCOL_SPC_SMPTE2085]          = NMD_COL_SPC_SMPTE2085,
+    [AVCOL_SPC_CHROMA_DERIVED_NCL] = NMD_COL_SPC_CHROMA_DERIVED_NCL,
+    [AVCOL_SPC_CHROMA_DERIVED_CL]  = NMD_COL_SPC_CHROMA_DERIVED_CL,
+    [AVCOL_SPC_ICTCP]              = NMD_COL_SPC_ICTCP,
 };
 
-SXPI_STATIC_ASSERT(col_spc_map, FF_ARRAY_ELEMS(col_spc_map) < 32);
+NMDI_STATIC_ASSERT(col_spc_map, FF_ARRAY_ELEMS(col_spc_map) < 32);
 
-static int get_sxplayer_col_spc(int avcol_spc)
+static int get_nmd_col_spc(int avcol_spc)
 {
     if (avcol_spc < 0 || avcol_spc >= FF_ARRAY_ELEMS(col_spc_map))
-        return SXPLAYER_COL_SPC_UNSPECIFIED;
+        return NMD_COL_SPC_UNSPECIFIED;
     return col_spc_map[avcol_spc];
 }
 
 static const int col_rng_map[] = {
-    [AVCOL_RANGE_UNSPECIFIED] = SXPLAYER_COL_RNG_UNSPECIFIED,
-    [AVCOL_RANGE_MPEG]        = SXPLAYER_COL_RNG_LIMITED,
-    [AVCOL_RANGE_JPEG]        = SXPLAYER_COL_RNG_FULL,
+    [AVCOL_RANGE_UNSPECIFIED] = NMD_COL_RNG_UNSPECIFIED,
+    [AVCOL_RANGE_MPEG]        = NMD_COL_RNG_LIMITED,
+    [AVCOL_RANGE_JPEG]        = NMD_COL_RNG_FULL,
 };
 
-SXPI_STATIC_ASSERT(col_rng_map, FF_ARRAY_ELEMS(col_rng_map) < 32);
+NMDI_STATIC_ASSERT(col_rng_map, FF_ARRAY_ELEMS(col_rng_map) < 32);
 
-static int get_sxplayer_col_rng(int avcol_rng)
+static int get_nmd_col_rng(int avcol_rng)
 {
     if (avcol_rng < 0 || avcol_rng >= FF_ARRAY_ELEMS(col_rng_map))
-        return SXPLAYER_COL_RNG_UNSPECIFIED;
+        return NMD_COL_RNG_UNSPECIFIED;
     return col_rng_map[avcol_rng];
 }
 
 static const int col_pri_map[] = {
-    [AVCOL_PRI_RESERVED0]   = SXPLAYER_COL_PRI_RESERVED0,
-    [AVCOL_PRI_BT709]       = SXPLAYER_COL_PRI_BT709,
-    [AVCOL_PRI_UNSPECIFIED] = SXPLAYER_COL_PRI_UNSPECIFIED,
-    [AVCOL_PRI_RESERVED]    = SXPLAYER_COL_PRI_RESERVED,
-    [AVCOL_PRI_BT470M]      = SXPLAYER_COL_PRI_BT470M,
-    [AVCOL_PRI_BT470BG]     = SXPLAYER_COL_PRI_BT470BG,
-    [AVCOL_PRI_SMPTE170M]   = SXPLAYER_COL_PRI_SMPTE170M,
-    [AVCOL_PRI_SMPTE240M]   = SXPLAYER_COL_PRI_SMPTE240M,
-    [AVCOL_PRI_FILM]        = SXPLAYER_COL_PRI_FILM,
-    [AVCOL_PRI_BT2020]      = SXPLAYER_COL_PRI_BT2020,
-    [AVCOL_PRI_SMPTE428]    = SXPLAYER_COL_PRI_SMPTE428,
-    [AVCOL_PRI_SMPTE431]    = SXPLAYER_COL_PRI_SMPTE431,
-    [AVCOL_PRI_SMPTE432]    = SXPLAYER_COL_PRI_SMPTE432,
-    [AVCOL_PRI_JEDEC_P22]   = SXPLAYER_COL_PRI_JEDEC_P22,
+    [AVCOL_PRI_RESERVED0]   = NMD_COL_PRI_RESERVED0,
+    [AVCOL_PRI_BT709]       = NMD_COL_PRI_BT709,
+    [AVCOL_PRI_UNSPECIFIED] = NMD_COL_PRI_UNSPECIFIED,
+    [AVCOL_PRI_RESERVED]    = NMD_COL_PRI_RESERVED,
+    [AVCOL_PRI_BT470M]      = NMD_COL_PRI_BT470M,
+    [AVCOL_PRI_BT470BG]     = NMD_COL_PRI_BT470BG,
+    [AVCOL_PRI_SMPTE170M]   = NMD_COL_PRI_SMPTE170M,
+    [AVCOL_PRI_SMPTE240M]   = NMD_COL_PRI_SMPTE240M,
+    [AVCOL_PRI_FILM]        = NMD_COL_PRI_FILM,
+    [AVCOL_PRI_BT2020]      = NMD_COL_PRI_BT2020,
+    [AVCOL_PRI_SMPTE428]    = NMD_COL_PRI_SMPTE428,
+    [AVCOL_PRI_SMPTE431]    = NMD_COL_PRI_SMPTE431,
+    [AVCOL_PRI_SMPTE432]    = NMD_COL_PRI_SMPTE432,
+    [AVCOL_PRI_JEDEC_P22]   = NMD_COL_PRI_JEDEC_P22,
 };
 
-SXPI_STATIC_ASSERT(col_pri_map, FF_ARRAY_ELEMS(col_pri_map) < 32);
+NMDI_STATIC_ASSERT(col_pri_map, FF_ARRAY_ELEMS(col_pri_map) < 32);
 
-static int get_sxplayer_col_pri(int avcol_pri)
+static int get_nmd_col_pri(int avcol_pri)
 {
     if (avcol_pri < 0 || avcol_pri >= FF_ARRAY_ELEMS(col_pri_map))
-        return SXPLAYER_COL_PRI_UNSPECIFIED;
+        return NMD_COL_PRI_UNSPECIFIED;
     return col_pri_map[avcol_pri];
 }
 
 static const int col_trc_map[] = {
-    [AVCOL_TRC_RESERVED0]    = SXPLAYER_COL_TRC_RESERVED0,
-    [AVCOL_TRC_BT709]        = SXPLAYER_COL_TRC_BT709,
-    [AVCOL_TRC_UNSPECIFIED]  = SXPLAYER_COL_TRC_UNSPECIFIED,
-    [AVCOL_TRC_RESERVED]     = SXPLAYER_COL_TRC_RESERVED,
-    [AVCOL_TRC_GAMMA22]      = SXPLAYER_COL_TRC_GAMMA22,
-    [AVCOL_TRC_GAMMA28]      = SXPLAYER_COL_TRC_GAMMA28,
-    [AVCOL_TRC_SMPTE170M]    = SXPLAYER_COL_TRC_SMPTE170M,
-    [AVCOL_TRC_SMPTE240M]    = SXPLAYER_COL_TRC_SMPTE240M,
-    [AVCOL_TRC_LINEAR]       = SXPLAYER_COL_TRC_LINEAR,
-    [AVCOL_TRC_LOG]          = SXPLAYER_COL_TRC_LOG,
-    [AVCOL_TRC_LOG_SQRT]     = SXPLAYER_COL_TRC_LOG_SQRT,
-    [AVCOL_TRC_IEC61966_2_4] = SXPLAYER_COL_TRC_IEC61966_2_4,
-    [AVCOL_TRC_BT1361_ECG]   = SXPLAYER_COL_TRC_BT1361_ECG,
-    [AVCOL_TRC_IEC61966_2_1] = SXPLAYER_COL_TRC_IEC61966_2_1,
-    [AVCOL_TRC_BT2020_10]    = SXPLAYER_COL_TRC_BT2020_10,
-    [AVCOL_TRC_BT2020_12]    = SXPLAYER_COL_TRC_BT2020_12,
-    [AVCOL_TRC_SMPTE2084]    = SXPLAYER_COL_TRC_SMPTE2084,
-    [AVCOL_TRC_SMPTE428]     = SXPLAYER_COL_TRC_SMPTE428,
-    [AVCOL_TRC_ARIB_STD_B67] = SXPLAYER_COL_TRC_ARIB_STD_B67,
+    [AVCOL_TRC_RESERVED0]    = NMD_COL_TRC_RESERVED0,
+    [AVCOL_TRC_BT709]        = NMD_COL_TRC_BT709,
+    [AVCOL_TRC_UNSPECIFIED]  = NMD_COL_TRC_UNSPECIFIED,
+    [AVCOL_TRC_RESERVED]     = NMD_COL_TRC_RESERVED,
+    [AVCOL_TRC_GAMMA22]      = NMD_COL_TRC_GAMMA22,
+    [AVCOL_TRC_GAMMA28]      = NMD_COL_TRC_GAMMA28,
+    [AVCOL_TRC_SMPTE170M]    = NMD_COL_TRC_SMPTE170M,
+    [AVCOL_TRC_SMPTE240M]    = NMD_COL_TRC_SMPTE240M,
+    [AVCOL_TRC_LINEAR]       = NMD_COL_TRC_LINEAR,
+    [AVCOL_TRC_LOG]          = NMD_COL_TRC_LOG,
+    [AVCOL_TRC_LOG_SQRT]     = NMD_COL_TRC_LOG_SQRT,
+    [AVCOL_TRC_IEC61966_2_4] = NMD_COL_TRC_IEC61966_2_4,
+    [AVCOL_TRC_BT1361_ECG]   = NMD_COL_TRC_BT1361_ECG,
+    [AVCOL_TRC_IEC61966_2_1] = NMD_COL_TRC_IEC61966_2_1,
+    [AVCOL_TRC_BT2020_10]    = NMD_COL_TRC_BT2020_10,
+    [AVCOL_TRC_BT2020_12]    = NMD_COL_TRC_BT2020_12,
+    [AVCOL_TRC_SMPTE2084]    = NMD_COL_TRC_SMPTE2084,
+    [AVCOL_TRC_SMPTE428]     = NMD_COL_TRC_SMPTE428,
+    [AVCOL_TRC_ARIB_STD_B67] = NMD_COL_TRC_ARIB_STD_B67,
 };
 
-SXPI_STATIC_ASSERT(col_trc_map, FF_ARRAY_ELEMS(col_trc_map) < 32);
+NMDI_STATIC_ASSERT(col_trc_map, FF_ARRAY_ELEMS(col_trc_map) < 32);
 
-static int get_sxplayer_col_trc(int avcol_trc)
+static int get_nmd_col_trc(int avcol_trc)
 {
     if (avcol_trc < 0 || avcol_trc >= FF_ARRAY_ELEMS(col_trc_map))
-        return SXPLAYER_COL_TRC_UNSPECIFIED;
+        return NMD_COL_TRC_UNSPECIFIED;
     return col_trc_map[avcol_trc];
 }
 
@@ -487,10 +486,10 @@ static int get_sxplayer_col_trc(int avcol_trc)
 /* Return the frame only if different from previous one. We do not make a
  * simple pointer check because of the frame reference counting (and thus
  * pointer reuse, depending on many parameters)  */
-static struct sxplayer_frame *ret_frame(struct sxplayer_ctx *s, AVFrame *frame)
+static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame)
 {
-    struct sxplayer_frame *ret = NULL;
-    const struct sxplayer_opts *o = &s->opts;
+    struct nmd_frame *ret = NULL;
+    const struct nmdi_opts *o = &s->opts;
 
     if (!frame) {
         LOG(s, DEBUG, "no frame to return");
@@ -541,11 +540,11 @@ static struct sxplayer_frame *ret_frame(struct sxplayer_ctx *s, AVFrame *frame)
     ret->pts      = frame_ts;
     ret->ms       = av_rescale_q(frame_ts, AV_TIME_BASE_Q, s->st_timebase);
     ret->ts       = frame_ts * av_q2d(s->st_timebase);
-    ret->color_space     = get_sxplayer_col_spc(frame->colorspace);
-    ret->color_range     = get_sxplayer_col_rng(frame->color_range);
-    ret->color_primaries = get_sxplayer_col_pri(frame->color_primaries);
-    ret->color_trc       = get_sxplayer_col_trc(frame->color_trc);
-    if (o->avselect == SXPLAYER_SELECT_VIDEO) {
+    ret->color_space     = get_nmd_col_spc(frame->colorspace);
+    ret->color_range     = get_nmd_col_rng(frame->color_range);
+    ret->color_primaries = get_nmd_col_pri(frame->color_primaries);
+    ret->color_trc       = get_nmd_col_trc(frame->color_trc);
+    if (o->avselect == NMD_SELECT_VIDEO) {
         if (frame->format == AV_PIX_FMT_VIDEOTOOLBOX ||
             frame->format == AV_PIX_FMT_VAAPI        ||
             frame->format == AV_PIX_FMT_MEDIACODEC) {
@@ -554,18 +553,18 @@ static struct sxplayer_frame *ret_frame(struct sxplayer_ctx *s, AVFrame *frame)
         }
         ret->width   = frame->width;
         ret->height  = frame->height;
-        ret->pix_fmt = sxpi_pix_fmts_ff2sx(frame->format);
+        ret->pix_fmt = nmdi_pix_fmts_ff2nmd(frame->format);
         LOG(s, DEBUG, "return %dx%d video frame @ ts=%s",
             frame->width, frame->height, av_ts2timestr(frame_ts, &s->st_timebase));
-    } else if (o->avselect == SXPLAYER_SELECT_AUDIO && o->audio_texture) {
+    } else if (o->avselect == NMD_SELECT_AUDIO && o->audio_texture) {
         ret->width   = frame->width;
         ret->height  = frame->height;
-        ret->pix_fmt = SXPLAYER_SMPFMT_FLT;
+        ret->pix_fmt = NMD_SMPFMT_FLT;
         LOG(s, DEBUG, "return %dx%d audio tex frame @ ts=%s",
             frame->width, frame->height, av_ts2timestr(frame_ts, &s->st_timebase));
     } else {
         ret->nb_samples = frame->nb_samples;
-        ret->pix_fmt = sxpi_smp_fmts_ff2sx(frame->format);
+        ret->pix_fmt = nmdi_smp_fmts_ff2nmd(frame->format);
         LOG(s, DEBUG, "return %d samples audio frame @ ts=%s",
             frame->nb_samples, av_ts2timestr(frame_ts, &s->st_timebase));
     }
@@ -575,7 +574,7 @@ end:
     return ret;
 }
 
-void sxplayer_release_frame(struct sxplayer_frame *frame)
+void nmd_release_frame(struct nmd_frame *frame)
 {
     if (frame) {
         AVFrame *avframe = frame->internal;
@@ -585,12 +584,12 @@ void sxplayer_release_frame(struct sxplayer_frame *frame)
     }
 }
 
-int sxplayer_set_drop_ref(struct sxplayer_ctx *s, int drop)
+int nmd_set_drop_ref(struct nmd_ctx *s, int drop)
 {
     return -1; // TODO
 }
 
-static AVFrame *pop_frame(struct sxplayer_ctx *s)
+static AVFrame *pop_frame(struct nmd_ctx *s)
 {
     AVFrame *frame = NULL;
 
@@ -602,8 +601,8 @@ static AVFrame *pop_frame(struct sxplayer_ctx *s)
 
         /* Stream time base is required to interpret the frame PTS */
         if (!s->st_timebase.den) {
-            struct sxplayer_info info;
-            int ret = sxpi_async_fetch_info(s->actx, &info);
+            struct nmd_info info;
+            int ret = nmdi_async_fetch_info(s->actx, &info);
             if (ret < 0) {
                 TRACE(s, "unable to fetch info %s", av_err2str(ret));
             } else {
@@ -615,7 +614,7 @@ static AVFrame *pop_frame(struct sxplayer_ctx *s)
         }
 
         if (s->st_timebase.den) {
-            int ret = sxpi_async_pop_frame(s->actx, &frame);
+            int ret = nmdi_async_pop_frame(s->actx, &frame);
             if (ret < 0)
                 TRACE(s, "poped a message raising %s", av_err2str(ret));
         }
@@ -643,7 +642,7 @@ static AVFrame *pop_frame(struct sxplayer_ctx *s)
 #define SYNTH_FRAME 0
 
 #if SYNTH_FRAME
-static struct sxplayer_frame *ret_synth_frame(struct sxplayer_ctx *s, int64_t t64)
+static struct nmd_frame *ret_synth_frame(struct nmd_ctx *s, int64_t t64)
 {
     AVFrame *frame = av_frame_alloc();
     const int frame_id = lrint(t64 * 60 / 1000000);
@@ -660,7 +659,7 @@ static struct sxplayer_frame *ret_synth_frame(struct sxplayer_ctx *s, int64_t t6
 }
 #endif
 
-int sxplayer_seek(struct sxplayer_ctx *s, double reqt)
+int nmd_seek(struct nmd_ctx *s, double reqt)
 {
     START_FUNC_T("SEEK", reqt);
 
@@ -671,13 +670,13 @@ int sxplayer_seek(struct sxplayer_ctx *s, double reqt)
     if (ret < 0)
         return ret;
 
-    const struct sxplayer_opts *o = &s->opts;
-    ret = sxpi_async_seek(s->actx, get_media_time(o, TIME2INT64(reqt)));
+    const struct nmdi_opts *o = &s->opts;
+    ret = nmdi_async_seek(s->actx, get_media_time(o, TIME2INT64(reqt)));
     END_FUNC(MAX_ASYNC_OP_TIME);
     return ret;
 }
 
-int sxplayer_stop(struct sxplayer_ctx *s)
+int nmd_stop(struct nmd_ctx *s)
 {
     START_FUNC("STOP");
 
@@ -688,12 +687,12 @@ int sxplayer_stop(struct sxplayer_ctx *s)
     if (ret < 0)
         return ret;
 
-    ret = sxpi_async_stop(s->actx);
+    ret = nmdi_async_stop(s->actx);
     END_FUNC(MAX_ASYNC_OP_TIME);
     return ret;
 }
 
-int sxplayer_start(struct sxplayer_ctx *s)
+int nmd_start(struct nmd_ctx *s)
 {
     START_FUNC("START");
 
@@ -701,7 +700,7 @@ int sxplayer_start(struct sxplayer_ctx *s)
     if (ret < 0)
         return ret;
 
-    ret = sxpi_async_start(s->actx);
+    ret = nmdi_async_start(s->actx);
     END_FUNC(MAX_ASYNC_OP_TIME);
     return ret;
 }
@@ -709,16 +708,16 @@ int sxplayer_start(struct sxplayer_ctx *s)
 /*
  * Stream timebase must be known when this function is called.
  */
-static inline int64_t stream_time(const struct sxplayer_ctx *s, int64_t t)
+static inline int64_t stream_time(const struct nmd_ctx *s, int64_t t)
 {
     av_assert0(s->st_timebase.den);
     return av_rescale_q(t, AV_TIME_BASE_Q, s->st_timebase);
 }
 
-struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64_t t64)
+struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
 {
     int64_t diff;
-    const struct sxplayer_opts *o = &s->opts;
+    const struct nmdi_opts *o = &s->opts;
 
     START_FUNC_T("GET FRAME", t64 / 1000000.);
 
@@ -731,7 +730,7 @@ struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64_t t64
         return ret_frame(s, NULL);
 
     if (t64 < 0) {
-        sxplayer_start(s);
+        nmd_start(s);
         return ret_frame(s, NULL);
     }
 
@@ -760,10 +759,10 @@ struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64_t t64
          * before we start the decoding process in order to save one seek and
          * some decoding (a seek for the initial start_time, then another one soon
          * after to reach the requested time). */
-        if (!sxpi_sxpi_async_started(s->actx) && vt > o->start_time64) {
+        if (!nmdi_nmdi_async_started(s->actx) && vt > o->start_time64) {
             TRACE(s, "no prefetch, but requested time (%s) beyond initial start_time (%s)",
                   PTS2TIMESTR(vt), PTS2TIMESTR(o->start_time64));
-            sxpi_async_seek(s->actx, vt);
+            nmdi_async_seek(s->actx, vt);
         }
 
         TRACE(s, "no frame ever pushed yet, pop a candidate");
@@ -839,7 +838,7 @@ struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64_t t64
 
         av_frame_free(&s->cached_frame);
 
-        ret = sxpi_async_seek(s->actx, vt);
+        ret = nmdi_async_seek(s->actx, vt);
         if (ret < 0) {
             av_frame_free(&candidate);
             return ret_frame(s, NULL);
@@ -897,12 +896,12 @@ struct sxplayer_frame *sxplayer_get_frame_ms(struct sxplayer_ctx *s, int64_t t64
     return ret_frame(s, candidate);
 }
 
-struct sxplayer_frame *sxplayer_get_frame(struct sxplayer_ctx *s, double t)
+struct nmd_frame *nmd_get_frame(struct nmd_ctx *s, double t)
 {
-    return sxplayer_get_frame_ms(s, TIME2INT64(t));
+    return nmd_get_frame_ms(s, TIME2INT64(t));
 }
 
-struct sxplayer_frame *sxplayer_get_next_frame(struct sxplayer_ctx *s)
+struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s)
 {
     START_FUNC("GET NEXT FRAME");
 
@@ -914,14 +913,14 @@ struct sxplayer_frame *sxplayer_get_next_frame(struct sxplayer_ctx *s)
     return ret_frame(s, frame);
 }
 
-int sxplayer_get_info(struct sxplayer_ctx *s, struct sxplayer_info *info)
+int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info)
 {
     START_FUNC("GET INFO");
 
     int ret = configure_context(s);
     if (ret < 0)
         goto end;
-    ret = sxpi_async_fetch_info(s->actx, info);
+    ret = nmdi_async_fetch_info(s->actx, info);
     if (ret < 0)
         goto end;
     TRACE(s, "media info: %dx%d %f tb:%d/%d",
@@ -933,12 +932,12 @@ end:
     return ret;
 }
 
-int sxplayer_get_duration(struct sxplayer_ctx *s, double *duration)
+int nmd_get_duration(struct nmd_ctx *s, double *duration)
 {
     START_FUNC("GET DURATION");
 
-    struct sxplayer_info info;
-    int ret = sxplayer_get_info(s, &info);
+    struct nmd_info info;
+    int ret = nmd_get_info(s, &info);
     if (ret < 0)
         goto end;
     *duration = info.duration;

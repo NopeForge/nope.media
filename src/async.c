@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -46,7 +46,7 @@ struct info_message {
 struct async_context {
     void *log_ctx;
     const char *filename;
-    const struct sxplayer_opts *o;
+    const struct nmdi_opts *o;
 
     struct demuxing_ctx  *demuxer;
     struct decoding_ctx  *decoder;
@@ -90,7 +90,7 @@ static int send_wait_ctl_message(struct async_context *actx,
                                  struct message *msg)
 {
     const int message_type = msg->type;
-    const char *msg_type_str = sxpi_async_get_msg_type_string(message_type);
+    const char *msg_type_str = nmdi_async_get_msg_type_string(message_type);
     TRACE(actx, "--> send %s", msg_type_str);
     int ret = av_thread_message_queue_send(actx->ctl_in_queue, msg, 0);
     if (ret < 0) {
@@ -103,7 +103,7 @@ static int send_wait_ctl_message(struct async_context *actx,
         ret = av_thread_message_queue_recv(actx->ctl_out_queue, msg, 0);
         if (ret < 0 || msg->type == message_type)
             break;
-        sxpi_msg_free_data(msg);
+        nmdi_msg_free_data(msg);
     }
     if (ret < 0)
         TRACE(actx, "couldn't get %s: %s", msg_type_str, av_err2str(ret));
@@ -149,12 +149,12 @@ static int fetch_mod_info(struct async_context *actx)
     TRACE(actx, "info fetched: %dx%d duration=%s",
           actx->info.width, actx->info.height,
           PTS2TIMESTR(actx->info.duration));
-    sxpi_msg_free_data(&msg);
+    nmdi_msg_free_data(&msg);
     actx->has_info = 1;
     return 0;
 }
 
-struct async_context *sxpi_async_alloc_context(void)
+struct async_context *nmdi_async_alloc_context(void)
 {
     struct async_context *actx = av_mallocz(sizeof(*actx));
     if (!actx)
@@ -162,7 +162,7 @@ struct async_context *sxpi_async_alloc_context(void)
     return actx;
 }
 
-int sxpi_async_fetch_info(struct async_context *actx, struct sxplayer_info *info)
+int nmdi_async_fetch_info(struct async_context *actx, struct nmd_info *info)
 {
     int ret = fetch_mod_info(actx);
     if (ret < 0)
@@ -176,7 +176,7 @@ int sxpi_async_fetch_info(struct async_context *actx, struct sxplayer_info *info
     return 0;
 }
 
-int sxpi_async_pop_frame(struct async_context *actx, AVFrame **framep)
+int nmdi_async_pop_frame(struct async_context *actx, AVFrame **framep)
 {
     int ret;
 
@@ -188,7 +188,7 @@ int sxpi_async_pop_frame(struct async_context *actx, AVFrame **framep)
 
     if (!actx->playing) {
         TRACE(actx, "not playing, start modules");
-        ret = sxpi_async_start(actx);
+        ret = nmdi_async_start(actx);
         if (ret < 0)
             return ret;
         ret = sync_control_thread(actx);
@@ -202,7 +202,7 @@ int sxpi_async_pop_frame(struct async_context *actx, AVFrame **framep)
     if (ret < 0) {
         TRACE(actx, "couldn't fetch frame from sink because %s", av_err2str(ret));
         av_thread_message_queue_set_err_send(actx->sink_queue, ret);
-        (void)sxpi_async_stop(actx);
+        (void)nmdi_async_stop(actx);
         return ret;
     }
     av_assert0(msg.type == MSG_FRAME);
@@ -220,7 +220,7 @@ static int create_seek_msg(struct message *msg, int64_t ts)
     return 0;
 }
 
-int sxpi_async_seek(struct async_context *actx, int64_t ts)
+int nmdi_async_seek(struct async_context *actx, int64_t ts)
 {
     TRACE(actx, "--> send seek msg @ %s", PTS2TIMESTR(ts));
     struct message msg;
@@ -237,7 +237,7 @@ int sxpi_async_seek(struct async_context *actx, int64_t ts)
     return 0;
 }
 
-int sxpi_async_start(struct async_context *actx)
+int nmdi_async_start(struct async_context *actx)
 {
     TRACE(actx, "--> send start msg");
     struct message msg = { .type = MSG_START };
@@ -250,7 +250,7 @@ int sxpi_async_start(struct async_context *actx)
     return 0;
 }
 
-int sxpi_async_stop(struct async_context *actx)
+int nmdi_async_stop(struct async_context *actx)
 {
     TRACE(actx, "--> send stop msg");
     struct message msg = { .type = MSG_STOP };
@@ -264,7 +264,7 @@ int sxpi_async_stop(struct async_context *actx)
 }
 
 static int initialize_modules_once(struct async_context *actx,
-                                   const struct sxplayer_opts *opts)
+                                   const struct nmdi_opts *opts)
 {
     int ret;
 
@@ -274,29 +274,29 @@ static int initialize_modules_once(struct async_context *actx,
     av_assert0(!actx->demuxer && !actx->decoder && !actx->filterer);
 
     TRACE(actx, "alloc modules");
-    actx->demuxer  = sxpi_demuxing_alloc();
-    actx->decoder  = sxpi_decoding_alloc();
-    actx->filterer = sxpi_filtering_alloc();
+    actx->demuxer  = nmdi_demuxing_alloc();
+    actx->decoder  = nmdi_decoding_alloc();
+    actx->filterer = nmdi_filtering_alloc();
     if (!actx->demuxer || !actx->decoder || !actx->filterer)
         return AVERROR(ENOMEM);
 
     TRACE(actx, "initialize modules");
 
-    if ((ret = sxpi_demuxing_init(actx->log_ctx,
+    if ((ret = nmdi_demuxing_init(actx->log_ctx,
                                   actx->demuxer,
                                   actx->src_queue, actx->pkt_queue,
                                   actx->filename, opts)) < 0 ||
-        (ret = sxpi_decoding_init(actx->log_ctx,
+        (ret = nmdi_decoding_init(actx->log_ctx,
                                   actx->decoder,
                                   actx->pkt_queue, actx->frames_queue,
-                                  sxpi_demuxing_is_image(actx->demuxer),
-                                  sxpi_demuxing_get_stream(actx->demuxer), opts)) < 0 ||
-        (ret = sxpi_filtering_init(actx->log_ctx,
+                                  nmdi_demuxing_is_image(actx->demuxer),
+                                  nmdi_demuxing_get_stream(actx->demuxer), opts)) < 0 ||
+        (ret = nmdi_filtering_init(actx->log_ctx,
                                    actx->filterer,
                                    actx->frames_queue, actx->sink_queue,
-                                   sxpi_demuxing_get_stream(actx->demuxer),
-                                   sxpi_decoding_get_avctx(actx->decoder),
-                                   sxpi_demuxing_probe_rotation(actx->demuxer), opts)) < 0)
+                                   nmdi_demuxing_get_stream(actx->demuxer),
+                                   nmdi_decoding_get_avctx(actx->decoder),
+                                   nmdi_demuxing_probe_rotation(actx->demuxer), opts)) < 0)
         return ret;
 
     actx->modules_initialized = 1;
@@ -308,7 +308,7 @@ static int alloc_msg_queue(AVThreadMessageQueue **q, int n)
     int ret = av_thread_message_queue_alloc(q, n, sizeof(struct message));
     if (ret < 0)
         return ret;
-    av_thread_message_queue_set_free_func(*q, sxpi_msg_free_data);
+    av_thread_message_queue_set_free_func(*q, nmdi_msg_free_data);
     return 0;
 }
 
@@ -316,9 +316,9 @@ static int alloc_msg_queue(AVThreadMessageQueue **q, int n)
 static void *name##_thread(void *arg)                                           \
 {                                                                               \
     struct async_context *actx = arg;                                           \
-    sxpi_set_thread_name("sxp/" AV_STRINGIFY(name));                            \
+    nmdi_set_thread_name("nmd/" AV_STRINGIFY(name));                            \
     TRACE(actx, "[>] " AV_STRINGIFY(action) " thread starting");                \
-    sxpi_##action##_run(actx->name);                                            \
+    nmdi_##action##_run(actx->name);                                            \
     TRACE(actx, "[<] " AV_STRINGIFY(action) " thread ending");                  \
     return NULL;                                                                \
 }
@@ -377,14 +377,14 @@ MODULE_THREAD_FUNC(filterer, filtering)
 
 static int is_seek_possible(const struct async_context *actx)
 {
-    return sxpi_demuxing_probe_duration(actx->demuxer) != AV_NOPTS_VALUE;
+    return nmdi_demuxing_probe_duration(actx->demuxer) != AV_NOPTS_VALUE;
 }
 
 static int op_start(struct async_context *actx)
 {
     struct message msg;
     int64_t seek_to = AV_NOPTS_VALUE;
-    const struct sxplayer_opts *o = actx->o;
+    const struct nmdi_opts *o = actx->o;
 
     TRACE(actx, "exec");
 
@@ -419,7 +419,7 @@ static int op_start(struct async_context *actx)
         if (ret < 0) {
             LOG(actx, ERROR, "Unable to queue a seek message to the demuxer, shouldn't happen!");
             av_thread_message_queue_set_err_recv(actx->src_queue, ret);
-            sxpi_msg_free_data(&msg);
+            nmdi_msg_free_data(&msg);
             return ret;
         }
     }
@@ -445,7 +445,7 @@ static int op_start(struct async_context *actx)
                 av_thread_message_queue_set_err_send(actx->sink_queue, ret);
                 return ret;
             }
-            sxpi_msg_free_data(&msg);
+            nmdi_msg_free_data(&msg);
         } while (msg.type != MSG_SEEK);
     }
 
@@ -454,7 +454,7 @@ static int op_start(struct async_context *actx)
 
 static int op_info(struct async_context *actx, struct message *msg)
 {
-    const struct sxplayer_opts *o = actx->o;
+    const struct nmdi_opts *o = actx->o;
 
     // We need the demuxer to be initialized to be able to call demuxing_*()
     int ret = initialize_modules_once(actx, o);
@@ -464,7 +464,7 @@ static int op_info(struct async_context *actx, struct message *msg)
     }
 
     int64_t end_time = o->end_time64 >= 0 ? o->end_time64 : AV_NOPTS_VALUE;
-    const int64_t probe_duration = sxpi_demuxing_probe_duration(actx->demuxer);
+    const int64_t probe_duration = nmdi_demuxing_probe_duration(actx->demuxer);
 
     av_assert0(AV_NOPTS_VALUE < 0);
     if (probe_duration != AV_NOPTS_VALUE && (end_time <= 0 || probe_duration < end_time)) {
@@ -475,8 +475,8 @@ static int op_info(struct async_context *actx, struct message *msg)
     }
     if (end_time == AV_NOPTS_VALUE)
         end_time = 0;
-    const AVStream *st = sxpi_demuxing_get_stream(actx->demuxer);
-    const int is_image = sxpi_demuxing_is_image(actx->demuxer);
+    const AVStream *st = nmdi_demuxing_get_stream(actx->demuxer);
+    const int is_image = nmdi_demuxing_is_image(actx->demuxer);
     struct info_message info = {
         .width    = st->codecpar->width,
         .height   = st->codecpar->height,
@@ -538,7 +538,7 @@ static void kill_join_reset_workers(struct async_context *actx)
  * it for next time we start them */
 static int op_seek(struct async_context *actx, struct message *seek_msg)
 {
-    const struct sxplayer_opts *o = actx->o;
+    const struct nmdi_opts *o = actx->o;
 
     TRACE(actx, "exec");
 
@@ -546,20 +546,20 @@ static int op_seek(struct async_context *actx, struct message *seek_msg)
     int ret = initialize_modules_once(actx, o);
     if (ret < 0) {
         LOG(actx, ERROR, "initializing modules failed with %s", av_err2str(ret));
-        sxpi_msg_free_data(seek_msg);
+        nmdi_msg_free_data(seek_msg);
         return ret;
     }
 
     if (!is_seek_possible(actx)) {
         TRACE(actx, "can not seek into media, ignoring seek");
-        sxpi_msg_free_data(seek_msg);
+        nmdi_msg_free_data(seek_msg);
         return 0;
     }
 
     actx->request_seek = *(int64_t *)seek_msg->data;
 
     if (!actx->playing) {
-        sxpi_msg_free_data(seek_msg);
+        nmdi_msg_free_data(seek_msg);
         return 0;
     }
 
@@ -568,7 +568,7 @@ static int op_seek(struct async_context *actx, struct message *seek_msg)
         /* If this errors out, it means the modules ended by themselves (no
          * stop requested by the user), so we delay the seek, reset the workers
          * and start them again */
-        sxpi_msg_free_data(seek_msg);
+        nmdi_msg_free_data(seek_msg);
         kill_join_reset_workers(actx);
         return op_start(actx);
     }
@@ -583,7 +583,7 @@ static int op_seek(struct async_context *actx, struct message *seek_msg)
             kill_join_reset_workers(actx);
             return op_start(actx);
         }
-        sxpi_msg_free_data(seek_msg);
+        nmdi_msg_free_data(seek_msg);
         if (seek_msg->type == MSG_SEEK)
             break;
     }
@@ -597,9 +597,9 @@ static void op_stop(struct async_context *actx)
 
     kill_join_reset_workers(actx);
 
-    sxpi_demuxing_free(&actx->demuxer);
-    sxpi_decoding_free(&actx->decoder);
-    sxpi_filtering_free(&actx->filterer);
+    nmdi_demuxing_free(&actx->demuxer);
+    nmdi_decoding_free(&actx->decoder);
+    nmdi_filtering_free(&actx->filterer);
 
     actx->modules_initialized = 0;
     actx->playing = 0;
@@ -613,7 +613,7 @@ static void *control_thread(void *arg)
 
     LOG(actx, INFO, "starting");
 
-    sxpi_set_thread_name("sxp/control");
+    nmdi_set_thread_name("nmd/control");
 
     for (;;) {
         struct message msg;
@@ -628,7 +628,7 @@ static void *control_thread(void *arg)
         }
 
         enum msg_type type = msg.type;
-        TRACE(actx, "--- handling OP %s", sxpi_async_get_msg_type_string(type));
+        TRACE(actx, "--- handling OP %s", nmdi_async_get_msg_type_string(type));
 
         switch (type) {
         case MSG_SEEK:
@@ -652,12 +652,12 @@ static void *control_thread(void *arg)
             av_assert0(0);
         }
 
-        TRACE(actx, "<-- OP %s processed", sxpi_async_get_msg_type_string(type));
+        TRACE(actx, "<-- OP %s processed", nmdi_async_get_msg_type_string(type));
 
         if (ret < 0) {
             LOG(actx, ERROR, "Unable to honor %s message: %s",
-                sxpi_async_get_msg_type_string(type), av_err2str(ret));
-            sxpi_msg_free_data(&msg);
+                nmdi_async_get_msg_type_string(type), av_err2str(ret));
+            nmdi_msg_free_data(&msg);
             break;
         }
 
@@ -665,13 +665,13 @@ static void *control_thread(void *arg)
         // if it's a sync OP
         if (type == MSG_INFO || type == MSG_SYNC) {
             TRACE(actx, "forward %s to control out queue",
-                  sxpi_async_get_msg_type_string(type));
+                  nmdi_async_get_msg_type_string(type));
             ret = av_thread_message_queue_send(actx->ctl_out_queue, &msg, 0);
             if (ret < 0) {
                 // shouldn't happen
                 LOG(actx, ERROR, "Unable to forward %s message to the output async queue: %s",
-                    sxpi_async_get_msg_type_string(type), av_err2str(ret));
-                sxpi_msg_free_data(&msg);
+                    nmdi_async_get_msg_type_string(type), av_err2str(ret));
+                nmdi_msg_free_data(&msg);
             }
         }
     }
@@ -686,8 +686,8 @@ static void *control_thread(void *arg)
     return NULL;
 }
 
-int sxpi_async_init(struct async_context *actx, void *log_ctx,
-               const char *filename, const struct sxplayer_opts *o)
+int nmdi_async_init(struct async_context *actx, void *log_ctx,
+                    const char *filename, const struct nmdi_opts *o)
 {
     int ret;
 
@@ -718,7 +718,7 @@ int sxpi_async_init(struct async_context *actx, void *log_ctx,
     return 0;
 }
 
-const char *sxpi_async_get_msg_type_string(enum msg_type type)
+const char *nmdi_async_get_msg_type_string(enum msg_type type)
 {
     static const char * const s[NB_MSG] = {
         [MSG_FRAME]  = "frame",
@@ -734,7 +734,7 @@ const char *sxpi_async_get_msg_type_string(enum msg_type type)
 
 static void control_quit(struct async_context *actx)
 {
-    sxpi_async_stop(actx);
+    nmdi_async_stop(actx);
     sync_control_thread(actx);
     av_thread_message_queue_set_err_send(actx->ctl_in_queue,  AVERROR_EXIT);
     av_thread_message_queue_set_err_send(actx->ctl_out_queue, AVERROR_EXIT);
@@ -745,7 +745,7 @@ static void control_quit(struct async_context *actx)
     JOIN_MODULE_THREAD(control);
 }
 
-int sxpi_sxpi_async_started(struct async_context *actx)
+int nmdi_nmdi_async_started(struct async_context *actx)
 {
     int ret = sync_control_thread(actx);
     if (ret < 0)
@@ -753,7 +753,7 @@ int sxpi_sxpi_async_started(struct async_context *actx)
     return actx->playing;
 }
 
-void sxpi_async_free(struct async_context **actxp)
+void nmdi_async_free(struct async_context **actxp)
 {
     struct async_context *actx = *actxp;
 

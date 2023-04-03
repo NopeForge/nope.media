@@ -68,7 +68,7 @@ jobs:
 
         make install -j $(sysctl -n hw.ncpu)
 
-    - name: Build sxplayer lib for ios
+    - name: Build nope.media for ios
       run: |
         PKG_CONFIG_LIBDIR=$HOME/ffmpeg-install-${{ matrix.ffmpeg_version }}/lib/pkgconfig \
         LDFLAGS="$LDFLAGS -L/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/" \

@@ -1,21 +1,21 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  * Copyright (c) 2012 Sebastien Zwickert
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -223,7 +223,7 @@ static int push_async_frame(struct decoder_ctx *dec_ctx,
         return AVERROR(ENOMEM);
     }
     TRACE(dec_ctx, "push frame pts=%"PRId64, frame->pts);
-    ret = sxpi_decoding_queue_frame(dec_ctx->decoding_ctx, frame);
+    ret = nmdi_decoding_queue_frame(dec_ctx->decoding_ctx, frame);
     if (ret < 0)
         av_frame_free(&frame);
     return ret;
@@ -418,7 +418,7 @@ static enum AVPixelFormat select_pix_fmt(const enum AVPixelFormat *pix_fmts,
     return best;
 }
 
-static int vtdec_init(struct decoder_ctx *dec_ctx, const struct sxplayer_opts *opts)
+static int vtdec_init(struct decoder_ctx *dec_ctx, const struct nmdi_opts *opts)
 {
     int ret;
     AVCodecContext *avctx = dec_ctx->avctx;
@@ -477,7 +477,7 @@ static int vtdec_init(struct decoder_ctx *dec_ctx, const struct sxplayer_opts *o
 
     vt->out_w = avctx->width;
     vt->out_h = avctx->height;
-    sxpi_update_dimensions(&vt->out_w, &vt->out_h, opts->max_pixels);
+    nmdi_update_dimensions(&vt->out_w, &vt->out_h, opts->max_pixels);
     TRACE(dec_ctx, "dimensions: %dx%d -> %dx%d (nb pixels: %d -> %d for a max of %d)\n",
           avctx->width, avctx->height, vt->out_w, vt->out_h,
           avctx->width * avctx->height, vt->out_w * vt->out_h,
@@ -684,7 +684,7 @@ static void vtdec_flush(struct decoder_ctx *dec_ctx)
 
     TRACE(dec_ctx, "decompression session finished delaying frames");
     send_queued_frames(dec_ctx);
-    sxpi_decoding_queue_frame(dec_ctx->decoding_ctx, NULL);
+    nmdi_decoding_queue_frame(dec_ctx->decoding_ctx, NULL);
     TRACE(dec_ctx, "queue cleared, flush ends");
 }
 
@@ -711,7 +711,7 @@ static void vtdec_uninit(struct decoder_ctx *dec_ctx)
     deccounter_update(-1);
 }
 
-const struct decoder sxpi_decoder_vt = {
+const struct decoder nmdi_decoder_vt = {
     .name             = "videotoolbox",
     .init             = vtdec_init,
     .push_packet      = vtdec_push_packet,

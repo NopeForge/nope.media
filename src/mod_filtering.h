@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -26,19 +26,19 @@
 
 #include "opts.h"
 
-struct filtering_ctx *sxpi_filtering_alloc(void);
+struct filtering_ctx *nmdi_filtering_alloc(void);
 
-int sxpi_filtering_init(void *log_ctx,
+int nmdi_filtering_init(void *log_ctx,
                         struct filtering_ctx *ctx,
                         AVThreadMessageQueue *in_queue,
                         AVThreadMessageQueue *out_queue,
                         const AVStream *stream,
                         const AVCodecContext *avctx,
                         double media_rotation,
-                        const struct sxplayer_opts *o);
+                        const struct nmdi_opts *o);
 
-void sxpi_filtering_run(struct filtering_ctx *ctx);
+void nmdi_filtering_run(struct filtering_ctx *ctx);
 
-void sxpi_filtering_free(struct filtering_ctx **ctxp);
+void nmdi_filtering_free(struct filtering_ctx **ctxp);
 
 #endif

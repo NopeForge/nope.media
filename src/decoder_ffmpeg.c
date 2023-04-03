@@ -1,20 +1,20 @@
 /*
- * This file is part of sxplayer.
+ * This file is part of nope.media.
  *
  * Copyright (c) 2015 Stupeflix
  *
- * sxplayer is free software; you can redistribute it and/or
+ * nope.media is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
  *
- * sxplayer is distributed in the hope that it will be useful,
+ * nope.media is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public
- * License along with sxplayer; if not, write to the Free Software
+ * License along with nope.media; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
@@ -141,7 +141,7 @@ static int init_vaapi(struct decoder_ctx *ctx)
 }
 #endif
 
-static int ffdec_init_sw(struct decoder_ctx *ctx, const struct sxplayer_opts *opts)
+static int ffdec_init_sw(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 {
     AVCodecContext *avctx = ctx->avctx;
     avctx->thread_count = 0;
@@ -150,7 +150,7 @@ static int ffdec_init_sw(struct decoder_ctx *ctx, const struct sxplayer_opts *op
     return avcodec_open2(avctx, codec, NULL);
 }
 
-static int ffdec_init_hw(struct decoder_ctx *ctx, const struct sxplayer_opts *opts)
+static int ffdec_init_hw(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 {
 #if HAVE_MEDIACODEC_HWACCEL
     return init_mediacodec(ctx);
@@ -217,7 +217,7 @@ static int ffdec_push_packet(struct decoder_ctx *ctx, const AVPacket *pkt)
                         next_pts += dec_frame->nb_samples;
                 }
 
-                ret = sxpi_decoding_queue_frame(ctx->decoding_ctx, dec_frame);
+                ret = nmdi_decoding_queue_frame(ctx->decoding_ctx, dec_frame);
                 if (ret < 0) {
                     TRACE(ctx, "Could not queue frame: %s", av_err2str(ret));
                     av_frame_free(&dec_frame);
@@ -233,7 +233,7 @@ static int ffdec_push_packet(struct decoder_ctx *ctx, const AVPacket *pkt)
         ret = 0;
 
     if (flush)
-        ret = sxpi_decoding_queue_frame(ctx->decoding_ctx, NULL);
+        ret = nmdi_decoding_queue_frame(ctx->decoding_ctx, NULL);
 
     return ret;
 }
@@ -244,14 +244,14 @@ static void ffdec_flush(struct decoder_ctx *ctx)
     avcodec_flush_buffers(avctx);
 }
 
-const struct decoder sxpi_decoder_ffmpeg_sw = {
+const struct decoder nmdi_decoder_ffmpeg_sw = {
     .name        = "ffmpeg_sw",
     .init        = ffdec_init_sw,
     .push_packet = ffdec_push_packet,
     .flush       = ffdec_flush,
 };
 
-const struct decoder sxpi_decoder_ffmpeg_hw = {
+const struct decoder nmdi_decoder_ffmpeg_hw = {
     .name        = "ffmpeg_hw",
     .init        = ffdec_init_hw,
     .push_packet = ffdec_push_packet,
