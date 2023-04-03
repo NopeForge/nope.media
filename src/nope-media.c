@@ -195,7 +195,7 @@ static void render(struct player *p)
         p->texture_height = frame->height;
     }
 
-    SDL_UpdateTexture(p->texture, NULL, frame->datap[0], frame->linesize);
+    SDL_UpdateTexture(p->texture, NULL, frame->datap[0], frame->linesizep[0]);
     SDL_RenderClear(p->renderer);
     SDL_RenderCopy(p->renderer, p->texture, NULL, &dst);
 
