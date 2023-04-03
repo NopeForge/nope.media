@@ -79,13 +79,13 @@ enum nmd_media_selection {
 
 enum nmd_pixel_format {
     NMD_PIXFMT_NONE = -1,
+    NMD_PIXFMT_AUTO,
     NMD_PIXFMT_RGBA,
     NMD_PIXFMT_BGRA,
     NMD_PIXFMT_VT,        // VideoToolBox pixel format (HW accelerated, frame->data/frame->datap[0] is a CVPixelBufferRef)
     NMD_PIXFMT_MEDIACODEC,// MediaCodec pixel format (HW accelerated, frame->data/frame->datap[0] is a AVMediaCodecBuffer)
     NMD_SMPFMT_FLT,
     NMD_PIXFMT_VAAPI,     // VAAPI pixel format (HW accelerated, frame->data/frame->datap[0] is a VASurfaceID)
-    NMD_PIXFMT_AUTO,
     NMD_PIXFMT_NV12,
     NMD_PIXFMT_YUV420P,
     NMD_PIXFMT_YUV422P,
