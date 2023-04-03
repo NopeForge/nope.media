@@ -19,7 +19,7 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -63,7 +63,7 @@ jobs:
 
     steps:
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -105,7 +105,7 @@ jobs:
       FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-03-12-51
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: actions/setup-python@v2
       with:
@@ -161,7 +161,7 @@ jobs:
       FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-03-12-51
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - uses: actions/setup-python@v2
       with:
