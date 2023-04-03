@@ -28,6 +28,15 @@
 #include "msg.h"
 #include "log.h"
 
+static void nmi_channel_layout_describe(const AVCodecParameters *par, char *buf, size_t buf_size)
+{
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(57, 24, 100)
+    av_get_channel_layout_string(buf, buf_size, 0, par->channel_layout);
+#else
+    av_channel_layout_describe(&par->ch_layout, buf, buf_size);
+#endif
+}
+
 extern const struct decoder nmdi_decoder_ffmpeg_sw;
 extern const struct decoder nmdi_decoder_ffmpeg_hw;
 static const struct decoder *decoder_def_software = &nmdi_decoder_ffmpeg_sw;
@@ -106,8 +115,7 @@ int nmdi_decoding_init(void *log_ctx,
 #define DUMP_INFO(par, name) do {                                       \
     if ((par)->codec_type == AVMEDIA_TYPE_AUDIO) {                      \
         char chl[1024];                                                 \
-        av_get_channel_layout_string(chl, sizeof(chl), 0,               \
-                                     (par)->channel_layout);            \
+        nmi_channel_layout_describe((par), chl, sizeof(chl));           \
         TRACE(ctx, name " stream: %s %s @ %dHz tb=%d/%d",               \
               chl, av_get_sample_fmt_name((par)->format),               \
               (par)->sample_rate,                                       \

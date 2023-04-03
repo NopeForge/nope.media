@@ -218,10 +218,16 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
         snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
                  time_base.num, time_base.den, codecpar->sample_rate,
                  av_get_sample_fmt_name(codecpar->format));
+#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(57, 24, 100)
         if (codecpar->channel_layout)
             av_strlcatf(args, sizeof(args), ":channel_layout=0x%"PRIx64, codecpar->channel_layout);
         else
             av_strlcatf(args, sizeof(args), ":channels=%d", codecpar->channels);
+#else
+        char chl[32] = {0};
+        av_channel_layout_describe(&codecpar->ch_layout, chl, sizeof(chl));
+        av_strlcatf(args, sizeof(args), ":channel_layout=%s", chl);
+#endif
     }
 
     TRACE(ctx, "graph buffer source args: %s", args);
