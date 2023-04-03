@@ -172,9 +172,7 @@ enum {
 };
 
 struct nmd_frame {
-    uint8_t *data;      // frame data in RGBA, BGRA, ... according to pix_fmt. Deprecated, use datap instead
     double ts;          // video timestamp
-    int linesize;       // linesize in bytes (includes padding). Deprecated, use linesizep instead
     union {
     int width;          // frame width in pixel
     int nb_samples;     // number of audio samples contained in the frame

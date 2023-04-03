@@ -533,8 +533,6 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame)
     }
 
     ret->internal = frame;
-    ret->data = frame->data[0];
-    ret->linesize = frame->linesize[0];
     memcpy(ret->datap, frame->data, sizeof(ret->datap));
     memcpy(ret->linesizep, frame->linesize, sizeof(ret->linesizep));
     ret->pts      = frame_ts;
@@ -548,7 +546,6 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame)
         if (frame->format == AV_PIX_FMT_VIDEOTOOLBOX ||
             frame->format == AV_PIX_FMT_VAAPI        ||
             frame->format == AV_PIX_FMT_MEDIACODEC) {
-            ret->data = frame->data[3];
             ret->datap[0] = frame->data[3];
         }
         ret->width   = frame->width;
