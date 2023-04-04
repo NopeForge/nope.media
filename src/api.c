@@ -26,7 +26,6 @@
 #include <libavformat/avformat.h>
 #include <libavutil/avassert.h>
 #include <libavutil/avstring.h>
-#include <libavutil/motion_vector.h>
 #include <libavutil/opt.h>
 #include <libavutil/rational.h>
 #include <libavutil/time.h>
@@ -76,7 +75,6 @@ static const AVOption options[] = {
     { "sw_pix_fmt",             NULL, OFFSET(sw_pix_fmt),             AV_OPT_TYPE_INT,       {.i64=NMD_PIXFMT_BGRA},  0, INT_MAX },
     { "autorotate",             NULL, OFFSET(autorotate),             AV_OPT_TYPE_INT,       {.i64=0},       0, 1 },
     { "auto_hwaccel",           NULL, OFFSET(auto_hwaccel),           AV_OPT_TYPE_INT,       {.i64=1},       0, 1 },
-    { "export_mvs",             NULL, OFFSET(export_mvs),             AV_OPT_TYPE_INT,       {.i64=0},       0, 1 },
     { "pkt_skip_mod",           NULL, OFFSET(pkt_skip_mod),           AV_OPT_TYPE_INT,       {.i64=0},       0, INT_MAX },
     { "thread_stack_size",      NULL, OFFSET(thread_stack_size),      AV_OPT_TYPE_INT,       {.i64=0},       0, INT_MAX },
     { "opaque",                 NULL, OFFSET(opaque),                 AV_OPT_TYPE_BINARY,    {.str=NULL},    0, UINT64_MAX },
@@ -275,10 +273,10 @@ static int set_context_fields(struct nmd_ctx *s)
         }
     }
 
-    if (o->auto_hwaccel && (o->filters || o->autorotate || o->export_mvs)) {
-        LOG(s, WARNING, "Filters ('%s'), autorotate (%d), or export_mvs (%d) settings "
+    if (o->auto_hwaccel && (o->filters || o->autorotate)) {
+        LOG(s, WARNING, "Filters ('%s') or autorotate (%d) settings "
             "are set but hwaccel is enabled, disabling auto_hwaccel so these "
-            "options are honored", o->filters, o->autorotate, o->export_mvs);
+            "options are honored", o->filters, o->autorotate);
         o->auto_hwaccel = 0;
     }
 
@@ -496,19 +494,6 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame)
 
     s->last_pushed_frame_ts = frame_ts;
 
-    AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_MOTION_VECTORS);
-    if (sd) {
-        ret->mvs = av_memdup(sd->data, sd->size);
-        if (!ret->mvs) {
-            LOG(s, ERROR, "Unable to memdup motion vectors side data");
-            av_frame_free(&frame);
-            av_freep(&ret);
-            goto end;
-        }
-        ret->nb_mvs = sd->size / sizeof(AVMotionVector);
-        TRACE(s, "export %d motion vectors", ret->nb_mvs);
-    }
-
     ret->internal = frame;
     memcpy(ret->datap, frame->data, sizeof(ret->datap));
     memcpy(ret->linesizep, frame->linesize, sizeof(ret->linesizep));
@@ -553,7 +538,6 @@ void nmd_release_frame(struct nmd_frame *frame)
     if (frame) {
         AVFrame *avframe = frame->internal;
         av_frame_free(&avframe);
-        av_freep(&frame->mvs);
         av_free(frame);
     }
 }

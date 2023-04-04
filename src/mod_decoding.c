@@ -133,9 +133,6 @@ int nmdi_decoding_init(void *log_ctx,
     if (ret < 0)
         return ret;
 
-    if (opts->export_mvs)
-        av_opt_set(ctx->decoder->avctx, "flags2", "+export_mvs", 0);
-
     avcodec_parameters_from_context(par, ctx->decoder->avctx);
     DUMP_INFO(par, "initialized");
 
