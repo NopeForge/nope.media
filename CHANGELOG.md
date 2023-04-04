@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `skip` and `trim_duration` options
 - `export_mvs` option
 - `pkt_skip_mod` option
+- `nmd_set_drop_ref()` (unimplemented)
 
 ## [9.14.0] - 2023-03-09
 ### Added

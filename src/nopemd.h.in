@@ -345,9 +345,6 @@ NMDAPI int nmd_seek(struct nmd_ctx *s, double t);
  */
 NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
 
-/* Enable or disable the droping of non reference frames */
-NMDAPI int nmd_set_drop_ref(struct nmd_ctx *s, int drop);
-
 /* Release a frame obtained with nmd_get_frame() */
 NMDAPI void nmd_release_frame(struct nmd_frame *frame);
 

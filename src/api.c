@@ -541,11 +541,6 @@ void nmd_release_frame(struct nmd_frame *frame)
     }
 }
 
-int nmd_set_drop_ref(struct nmd_ctx *s, int drop)
-{
-    return -1; // TODO
-}
-
 static AVFrame *pop_frame(struct nmd_ctx *s)
 {
     AVFrame *frame = NULL;
