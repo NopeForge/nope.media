@@ -9,9 +9,13 @@ on:
       - cron: "0 0 * * 6"  # Run every Saturday at midnight
 
 jobs:
-  macos-static:
+  macos:
 
     runs-on: macos-latest
+
+    strategy:
+      matrix:
+        build_type: [static, shared]
 
     steps:
     - uses: actions/checkout@v3
@@ -25,38 +29,12 @@ jobs:
 
     - name: Run tests
       run: |
-        meson setup --buildtype release builddir --default-library static
+        meson setup --buildtype release builddir --default-library ${{ matrix.build_type }}
         meson test -C builddir -v
 
     - name: Upload Logs
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
-        name: macos-static-logs
-        path: builddir/meson-logs
-
-  macos-shared:
-
-    runs-on: macos-latest
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Install dependencies
-      run: |
-        brew install meson ninja
-        brew install sdl2
-        brew install ffmpeg
-        brew install pkg-config
-
-    - name: Run tests
-      run: |
-        meson setup --buildtype release builddir --default-library shared
-        meson test -C builddir -v
-
-    - name: Upload Logs
-      if: ${{ always() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: macos-shared-logs
+        name: macos-${{ matrix.build_type }}-logs
         path: builddir/meson-logs
