@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - frame `data` and `linesize`
 - `skip` and `trim_duration` options
 - `export_mvs` option
+- `pkt_skip_mod` option
 
 ## [9.14.0] - 2023-03-09
 ### Added

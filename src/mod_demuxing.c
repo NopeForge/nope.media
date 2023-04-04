@@ -30,8 +30,6 @@
 
 struct demuxing_ctx {
     void *log_ctx;
-    int pkt_skip_mod;
-    int64_t pkt_count;
     AVFormatContext *fmt_ctx;
     AVStream *stream;
     int stream_idx;
@@ -109,7 +107,6 @@ int nmdi_demuxing_init(void *log_ctx,
 
     ctx->src_queue = src_queue;
     ctx->pkt_queue = pkt_queue;
-    ctx->pkt_skip_mod = opts->pkt_skip_mod;
 
     switch (opts->avselect) {
     case NMD_SELECT_VIDEO: media_type = AVMEDIA_TYPE_VIDEO; break;
@@ -173,14 +170,6 @@ static int pull_packet(struct demuxing_ctx *ctx, AVPacket *pkt)
                   pkt->stream_index, target_stream_idx);
             av_packet_unref(pkt);
             continue;
-        }
-
-        if (ctx->pkt_skip_mod) {
-            ctx->pkt_count++;
-            if (ctx->pkt_count % ctx->pkt_skip_mod && !(pkt->flags & AV_PKT_FLAG_KEY)) {
-                av_packet_unref(pkt);
-                continue;
-            }
         }
 
         break;
