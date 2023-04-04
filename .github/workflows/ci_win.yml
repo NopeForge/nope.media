@@ -9,9 +9,18 @@ on:
       - cron: "0 0 * * 6"  # Run every Saturday at midnight
 
 jobs:
-  mingw-static:
+  mingw:
 
     runs-on: windows-latest
+
+    strategy:
+      matrix:
+        build_type: [static, shared]
+        include:
+          - player: disabled
+            build_type: static
+          - player: enabled
+            build_type: shared
 
     defaults:
       run:
@@ -35,7 +44,7 @@ jobs:
 
       - name: Setup
         run: |
-          meson setup builddir --default-library static -Dplayer=disabled
+          meson setup builddir --default-library ${{ matrix.build_type }} -Dplayer=${{ matrix.player }}
 
       - name: Build
         run: |
@@ -49,51 +58,7 @@ jobs:
         if: ${{ always() }}
         uses: actions/upload-artifact@v2
         with:
-          name: mingw-static-logs
-          path: builddir/meson-logs
-
-
-  mingw-shared:
-
-    runs-on: windows-latest
-
-    defaults:
-      run:
-        shell: msys2 {0}
-
-    steps:
-
-      - uses: actions/checkout@v3
-
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64 # Start a 64 bit Mingw environment
-          update: true
-
-      - name: Install dependencies
-        run: |
-          pacman -S --noconfirm --needed git
-          pacman -S --noconfirm --needed mingw-w64-x86_64-{toolchain,ffmpeg}
-          pacman -S --noconfirm mingw-w64-x86_64-python3-pip
-          pacman -S --noconfirm --needed mingw-w64-x86_64-meson
-
-      - name: Setup
-        run: |
-          meson setup builddir --default-library shared
-
-      - name: Build
-        run: |
-          meson compile -C builddir
-
-      - name: Test
-        run: |
-          meson test -C builddir
-
-      - name: Upload Logs
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: mingw-shared-logs
+          name: mingw-${{ matrix.build_type }}-logs
           path: builddir/meson-logs
 
 
