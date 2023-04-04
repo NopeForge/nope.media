@@ -35,7 +35,6 @@ struct nmdi_opts {
     int sw_pix_fmt;                         // node.media pixel format to use for software decoding
     int autorotate;                         // switch for automatically rotate in software decoding
     int auto_hwaccel;                       // attempt to enable hardware acceleration
-    int pkt_skip_mod;                       // skip packet if module pkt_skip_mod (and not a key pkt)
     int thread_stack_size;
     void *opaque;                           // pointer to an opaque pointer forwarded to the decoder
     int opaque_size;                        // opaque pointer size
