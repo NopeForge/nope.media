@@ -188,8 +188,6 @@ struct nmd_frame {
     int color_range;    // video color range (any of NMD_COL_RNG_*)
     int color_primaries;// video color primaries (any of NMD_COL_PRI_*)
     int color_trc;      // video color transfer (any of NMD_COL_TRC_*)
-    void *mvs;          // motions vectors (AVMotionVector*)
-    int nb_mvs;         // number of motions vectors
 };
 
 struct nmd_info {
@@ -255,7 +253,6 @@ NMDAPI void nmd_set_log_callback(struct nmd_ctx *s, void *arg, nmd_log_callback_
  *                                      If the decoder output format is not supported, nope.media fallbacks to RGBA.
  *   autorotate               integer   automatically insert rotation filters (video software decoding only)
  *   auto_hwaccel             integer   attempt to enable hardware acceleration
- *   export_mvs               integer   export motion vectors into frame->mvs
  *   pkt_skip_mod             integer   skip packet if module pkt_skip_mod (and not a key pkt)
  *   opaque                   binary    pointer to an opaque pointer forwarded to the decoder (for example, a pointer to an android/view/Surface to use in conjonction with the mediacodec decoder)
  *   max_pixels               integer   maximum number of pixels per frame

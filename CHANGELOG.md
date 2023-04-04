@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - C++ compat header
 - frame `data` and `linesize`
 - `skip` and `trim_duration` options
+- `export_mvs` option
 
 ## [9.14.0] - 2023-03-09
 ### Added
