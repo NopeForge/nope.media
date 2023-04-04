@@ -97,12 +97,16 @@ jobs:
           path: builddir/meson-logs
 
 
-  msvc-static:
+  msvc:
 
     runs-on: windows-latest
     env:
       FFMPEG_SRC: ffmpeg-n6.0-12-ga6dc92968a-win64-gpl-shared-6.0
       FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-03-12-51
+
+    strategy:
+      matrix:
+        build_type: [static, shared]
 
     steps:
     - uses: actions/checkout@v3
@@ -129,7 +133,7 @@ jobs:
       shell: cmd
       run: |
         "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x64 && ^
-        meson setup builddir --backend vs --buildtype release --default-library static ^
+        meson setup builddir --backend vs --buildtype release --default-library ${{ matrix.build_type }} ^
         --pkg-config-path "D:\a\nope.media\nope.media\ffmpeg\lib\pkgconfig"
 
     - name: Build
@@ -149,61 +153,5 @@ jobs:
       if: ${{ always() }}
       uses: actions/upload-artifact@v2
       with:
-        name: msvc-static-logs
-        path: builddir/meson-logs
-
-
-  msvc-shared:
-
-    runs-on: windows-latest
-    env:
-      FFMPEG_SRC: ffmpeg-n6.0-12-ga6dc92968a-win64-gpl-shared-6.0
-      FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-03-12-51
-
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/setup-python@v2
-      with:
-        python-version: '3.x'
-        architecture: 'x64'
-
-    - name: Install meson and pkg-config
-      shell: bash
-      run: |
-        pip install meson
-        choco install --allow-empty-checksums pkgconfiglite
-
-    - name: Install dependencies
-      shell: bash
-      run: |
-        curl -L -o ${{ env.FFMPEG_SRC }}.zip ${{ env.FFMPEG_URL }}/${{ env.FFMPEG_SRC }}.zip
-        unzip ${{ env.FFMPEG_SRC }}.zip
-        ln -s ${{ env.FFMPEG_SRC }} ffmpeg
-
-    - name: Setup
-      shell: cmd
-      run: |
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x64 && ^
-        meson setup builddir --backend vs --buildtype release --default-library shared ^
-        --pkg-config-path "D:\a\nope.media\nope.media\ffmpeg\lib\pkgconfig"
-
-    - name: Build
-      shell: cmd
-      run: |
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x64 && ^
-        meson compile -C builddir
-
-    - name: Test
-      shell: cmd
-      run: |
-        set PATH=D:\a\nope.media\nope.media\ffmpeg\bin;%PATH%
-        "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat" x64 && ^
-        meson test -C builddir
-
-    - name: Upload Logs
-      if: ${{ always() }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: msvc-shared-logs
+        name: msvc-${{ matrix.build_type }}-logs
         path: builddir/meson-logs
