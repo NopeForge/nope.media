@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Project is forked and renamed to nope.media
 
+### Removed
+- C++ compat header
+
 ## [9.14.0] - 2023-03-09
 ### Added
 - Support for log messages of any length
