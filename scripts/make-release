@@ -14,7 +14,10 @@ if [ $# -ne 1 ]; then
 	exit 1
 fi
 
-cd "$(dirname $0)"
+if [ ! -f CHANGELOG.md ]; then
+	echo "This script must be executed from the project root directory" >&2
+	exit 1
+fi
 
 if ! git diff-index --quiet HEAD; then
 	echo "Git index is not clean"
