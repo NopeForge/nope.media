@@ -31,7 +31,7 @@ int main(int ac, char **av)
                 printf("null frame\n");
                 break;
             }
-            printf("frame #%d / data:%p ts:%f %dx%d lz:%d sfxpixfmt:%d\n",
+            printf("frame #%d / data:%p ts:%f %dx%d lz:%d nmdpixfmt:%d\n",
                    i++, frame->datap[0], frame->ts, frame->width, frame->height,
                    frame->linesizep[0], frame->pix_fmt);
 
