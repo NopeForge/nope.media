@@ -8,7 +8,7 @@
 
 ## Introduction
 
-`nope.media` is a video player library for fetching frames at exact times.
+`nope.media` is a video playback library for fetching frames at exact times.
 
 It can handle only one stream at a time, generally video. If audio is
 requested, the frame returned will be an instant video frame containing both
