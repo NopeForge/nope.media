@@ -155,11 +155,10 @@ static void audio_frame_to_sound_texture(struct filtering_ctx *ctx, AVFrame *dst
                   source_line, source_line + AUDIO_NBCHANNELS, nb_dest_pixels, nb_identical_values, source_step);
 
             for (int j = 0; j < nb_dest_pixels; j++) {
-                int x;
                 const float avg = (fft_src[ j*2      * source_step] +
                                    fft_src[(j*2 + 1) * source_step]) / 2.f;
 
-                for (x = 0; x < nb_identical_values; x++)
+                for (int x = 0; x < nb_identical_values; x++)
                     fft_dst[j*nb_identical_values + x] = avg;
             }
         }
