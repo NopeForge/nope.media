@@ -13,7 +13,7 @@ int main(int ac, char **av)
     const char *filename = av[1];
     const int use_pkt_duration = ac > 2 ? atoi(av[2]) : 0;
 
-    int i = 0, ret = 0, r, smp = 0;
+    int i = 0, ret = 0, smp = 0;
     struct nmd_ctx *s = nmd_create(filename);
 
     if (!s)
@@ -24,7 +24,7 @@ int main(int ac, char **av)
     nmd_set_option(s, "avselect", NMD_SELECT_AUDIO);
     nmd_set_option(s, "audio_texture", 0);
 
-    for (r = 0; r < 2; r++) {
+    for (int r = 0; r < 2; r++) {
         printf("run #%d\n", r+1);
         for (;;) {
             struct nmd_frame *frame = nmd_get_next_frame(s);
