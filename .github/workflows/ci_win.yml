@@ -68,6 +68,8 @@ jobs:
     env:
       FFMPEG_SRC: ffmpeg-n6.0-12-ga6dc92968a-win64-gpl-shared-6.0
       FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-04-03-12-51
+      PKGCONF_SRC: pkgconf-1.9.4
+      PKGCONF_URL: https://distfiles.dereferenced.org/pkgconf
 
     strategy:
       matrix:
@@ -81,11 +83,25 @@ jobs:
         python-version: '3.x'
         architecture: 'x64'
 
-    - name: Install meson and pkg-config
+    - name: Install meson
       shell: bash
       run: |
         pip install meson
-        choco install --allow-empty-checksums pkgconfiglite
+
+    - name: Download pkgconf
+      shell: bash
+      run: |
+        curl -L -o ${{ env.PKGCONF_SRC }}.tar.xz ${{ env.PKGCONF_URL }}/${{ env.PKGCONF_SRC }}.tar.xz
+        tar xf ${{ env.PKGCONF_SRC }}.tar.xz
+
+    - name: Install pkgconf
+      shell: pwsh
+      run: |
+        .\scripts\msvc-env.ps1
+        cd ${{ env.PKGCONF_SRC }}
+        meson setup builddir --buildtype release -Dtests=disabled --prefix "D:\a\nope.media\nope.media\pkgconf"
+        meson install -C builddir
+        copy D:\a\nope.media\nope.media\pkgconf\bin\pkgconf.exe D:\a\nope.media\nope.media\pkgconf\bin\pkg-config.exe
 
     - name: Install dependencies
       shell: bash
@@ -98,6 +114,7 @@ jobs:
       shell: pwsh
       run: |
         .\scripts\msvc-env.ps1
+        $env:Path = "D:\a\nope.media\nope.media\pkgconf\bin;" + $env:Path
         meson setup builddir --backend vs --buildtype release --default-library ${{ matrix.build_type }} `
         --pkg-config-path "D:\a\nope.media\nope.media\ffmpeg\lib\pkgconfig"
 
