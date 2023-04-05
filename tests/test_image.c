@@ -19,7 +19,7 @@ int main(int ac, char **av)
 
     if (!s)
         return -1;
-    nmd_set_option(s, "skip", 3.0);
+    nmd_set_option(s, "start_time", 3.0);
     nmd_set_option(s, "auto_hwaccel", 0);
     nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
     f = nmd_get_frame(s, 53.0);
