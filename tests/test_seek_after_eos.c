@@ -33,7 +33,7 @@ int main(int ac, char **av)
     nmd_set_option(s, "auto_hwaccel", 0);
     nmd_set_option(s, "avselect", avselect);
     nmd_set_option(s, "audio_texture", 0);
-    nmd_set_option(s, "skip", skip);
+    nmd_set_option(s, "start_time", skip);
     nmd_set_option(s, "end_time", end_time);
     nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
 
@@ -58,7 +58,7 @@ int main(int ac, char **av)
             nmd_set_option(s, "auto_hwaccel", 0);
             nmd_set_option(s, "avselect", avselect);
             nmd_set_option(s, "audio_texture", 0);
-            nmd_set_option(s, "skip", skip);
+            nmd_set_option(s, "start_time", skip);
             nmd_set_option(s, "end_time", end_time);
 
             for (int i = 0; i < nb_frames; i++) {
