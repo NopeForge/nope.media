@@ -33,7 +33,7 @@ int main(int ac, char **av)
                 printf("null frame\n");
                 break;
             }
-            printf("frame #%d / data:%p ts:%f nb_samples:%d sfxsmpfmt:%d\n",
+            printf("frame #%d / data:%p ts:%f nb_samples:%d nmdsmpfmt:%d\n",
                    i++, frame->datap[0], frame->ts, frame->nb_samples, frame->pix_fmt);
             smp += frame->nb_samples;
 
