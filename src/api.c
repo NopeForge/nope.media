@@ -210,7 +210,7 @@ struct nmd_ctx *nmd_create(const char *filename)
         NMD_VERSION_MAJOR, NMD_VERSION_MINOR, NMD_VERSION_MICRO);
 
 #define VFMT(v) (v)>>16, (v)>>8 & 0xff, (v) & 0xff
-    for (int i = 0; i < FF_ARRAY_ELEMS(fflibs); i++) {
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(fflibs); i++) {
         const unsigned bversion = fflibs[i].build_version;
         const unsigned rversion = fflibs[i].runtime_version;
         LOG(s, INFO, "lib%-12s build:%3d.%3d.%3d runtime:%3d.%3d.%3d",
