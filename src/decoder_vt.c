@@ -410,7 +410,7 @@ static enum AVPixelFormat select_pix_fmt(const enum AVPixelFormat *pix_fmts,
         AV_PIX_FMT_BGRA,
     };
     enum AVPixelFormat best = AV_PIX_FMT_NONE;
-    for (int i = 0; i < FF_ARRAY_ELEMS(supported_pix_fmts); i++) {
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(supported_pix_fmts); i++) {
         const enum AVPixelFormat p = supported_pix_fmts[i];
         if (is_pix_fmt_allowed(pix_fmts, nb_pix_fmts, p))
             best = av_find_best_pix_fmt_of_2(best, p, in_pix_fmt, 0, NULL);

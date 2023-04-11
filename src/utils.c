@@ -55,7 +55,7 @@ static const struct {
 
 enum AVPixelFormat nmdi_pix_fmts_nmd2ff(enum nmd_pixel_format pix_fmt)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(pix_fmts_mapping); i++)
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(pix_fmts_mapping); i++)
         if (pix_fmts_mapping[i].nmd == pix_fmt)
             return pix_fmts_mapping[i].ff;
     return AV_PIX_FMT_NONE;
@@ -63,7 +63,7 @@ enum AVPixelFormat nmdi_pix_fmts_nmd2ff(enum nmd_pixel_format pix_fmt)
 
 enum nmd_pixel_format nmdi_pix_fmts_ff2nmd(enum AVPixelFormat pix_fmt)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(pix_fmts_mapping); i++)
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(pix_fmts_mapping); i++)
         if (pix_fmts_mapping[i].ff == pix_fmt)
             return pix_fmts_mapping[i].nmd;
     return -1;
@@ -71,7 +71,7 @@ enum nmd_pixel_format nmdi_pix_fmts_ff2nmd(enum AVPixelFormat pix_fmt)
 
 enum nmd_pixel_format nmdi_smp_fmts_ff2nmd(enum AVSampleFormat smp_fmt)
 {
-    for (int i = 0; i < FF_ARRAY_ELEMS(smp_fmts_mapping); i++)
+    for (size_t i = 0; i < FF_ARRAY_ELEMS(smp_fmts_mapping); i++)
         if (smp_fmts_mapping[i].ff == smp_fmt)
             return smp_fmts_mapping[i].nmd;
     return -1;
