@@ -348,6 +348,20 @@ NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
 /* Release a frame obtained with nmd_get_frame() */
 NMDAPI void nmd_frame_releasep(struct nmd_frame **framep);
 
+/**
+ * Render to surface and release a MediaCodec frame obtained with
+ * nmd_get_frame(), nmd_get_frame_ms() or nmd_get_next_frame().
+ *
+ * @param framep the address of a nmd_frame pointer to be rendered
+ *               and released
+ *
+ * Note: the nmd_frame is released even if the underlying MediaCodec
+ * buffer failed to be rendered.
+ *
+ * Return 0 on success, a negative value on error
+ */
+NMDAPI int nmd_mc_frame_render_and_releasep(struct nmd_frame **framep);
+
 /* Close and free everything */
 NMDAPI void nmd_freep(struct nmd_ctx **sp);
 
