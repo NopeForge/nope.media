@@ -37,6 +37,10 @@
 #include "log.h"
 #include "internal.h"
 
+#if HAVE_MEDIACODEC_HWACCEL
+#include <libavcodec/mediacodec.h>
+#endif
+
 struct nmd_ctx {
     const AVClass *class;                   // necessary for the AVOption mechanism
     struct log_ctx *log_ctx;
@@ -541,6 +545,24 @@ void nmd_frame_releasep(struct nmd_frame **framep)
     AVFrame *avframe = frame->internal;
     av_frame_free(&avframe);
     av_freep(framep);
+}
+
+int nmd_mc_frame_render_and_releasep(struct nmd_frame **framep)
+{
+#if HAVE_MEDIACODEC_HWACCEL
+    struct nmd_frame *frame = *framep;
+    if (!frame)
+        return 0;
+    av_assert0(frame->pix_fmt == NMD_PIXFMT_MEDIACODEC);
+    AVMediaCodecBuffer *buffer = (AVMediaCodecBuffer *)frame->datap[0];
+    int ret = av_mediacodec_release_buffer(buffer, 1);
+    nmd_frame_releasep(framep);
+    if (ret < 0)
+        return -1;
+    return 0;
+#else
+    av_assert0(0);
+#endif
 }
 
 static AVFrame *pop_frame(struct nmd_ctx *s)
