@@ -236,7 +236,7 @@ fail:
     return NULL;
 }
 
-void nmd_free(struct nmd_ctx **ss)
+void nmd_freep(struct nmd_ctx **ss)
 {
     struct nmd_ctx *s = *ss;
 

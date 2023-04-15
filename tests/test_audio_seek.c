@@ -31,7 +31,7 @@ int main(int ac, char **av)
 
         if (!frame) {
             fprintf(stderr, "got unexpected null frame\n");
-            nmd_free(&s);
+            nmd_freep(&s);
             return -1;
         }
         printf("frame #%d / data:%p ts:%f nb_samples:%d nmdsmpfmt:%d\n",
@@ -52,7 +52,7 @@ int main(int ac, char **av)
         ret = -1;
     }
     nmd_release_frame(frame);
-    nmd_free(&s);
+    nmd_freep(&s);
 
     return ret;
 }

@@ -41,7 +41,7 @@ int main(int ac, char **av)
         }
     }
 
-    nmd_free(&s);
+    nmd_freep(&s);
 
     if (smp != 15876000) {
         fprintf(stderr, "decoded %d/15876000 expected samples\n", smp);

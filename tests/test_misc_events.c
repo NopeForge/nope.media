@@ -37,17 +37,17 @@ int main(int ac, char **av)
     nmd_seek(s, 82.9);
     f = nmd_get_frame(s, 83.5);
     if (!f) {
-        nmd_free(&s);
+        nmd_freep(&s);
         return -1;
     }
     nmd_release_frame(f);
     nmd_stop(s);
     f = nmd_get_frame(s, 83.5);
     if (!f) {
-        nmd_free(&s);
+        nmd_freep(&s);
         return -1;
     }
-    nmd_free(&s);
+    nmd_freep(&s);
     nmd_release_frame(f);
     return 0;
 }

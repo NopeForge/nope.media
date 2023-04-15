@@ -39,7 +39,7 @@ int main(int ac, char **av)
         }
     }
 
-    nmd_free(&s);
+    nmd_freep(&s);
 
     if (i != 8192) {
         fprintf(stderr, "decoded %d/8192 expected frames\n", i);

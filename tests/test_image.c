@@ -44,6 +44,6 @@ int main(int ac, char **av)
         return -1;
     }
 
-    nmd_free(&s);
+    nmd_freep(&s);
     return 0;
 }

@@ -360,7 +360,7 @@ done:
     SDL_DestroyRenderer(p.renderer);
     SDL_DestroyWindow(p.window);
     SDL_Quit();
-    nmd_free(&p.nmd_ctx);
+    nmd_freep(&p.nmd_ctx);
 
     return ret;
 }

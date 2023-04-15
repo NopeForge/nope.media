@@ -32,6 +32,6 @@ int main(int ac, char **av)
         nmd_release_frame(f);
         return -1;
     }
-    nmd_free(&s);
+    nmd_freep(&s);
     return 0;
 }

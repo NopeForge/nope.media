@@ -42,7 +42,7 @@ int main(int ac, char **av)
 
     nmd_release_frame(f1);
     nmd_release_frame(f2);
-    nmd_free(&s1);
-    nmd_free(&s2);
+    nmd_freep(&s1);
+    nmd_freep(&s2);
     return 0;
 }
