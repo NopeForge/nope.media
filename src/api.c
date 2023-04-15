@@ -236,9 +236,9 @@ fail:
     return NULL;
 }
 
-void nmd_freep(struct nmd_ctx **ss)
+void nmd_freep(struct nmd_ctx **sp)
 {
-    struct nmd_ctx *s = *ss;
+    struct nmd_ctx *s = *sp;
 
     if (!s)
         return;
@@ -247,7 +247,7 @@ void nmd_freep(struct nmd_ctx **ss)
 
     free_temp_context_data(s);
     free_context(s);
-    *ss = NULL;
+    *sp = NULL;
 }
 
 /**
