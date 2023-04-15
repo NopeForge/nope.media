@@ -38,7 +38,7 @@ int main(int ac, char **av)
                 i, frame->datap[0], frame->ts, frame->nb_samples, frame->pix_fmt);
         last_ts = frame->ts;
 
-        nmd_release_frame(frame);
+        nmd_frame_releasep(&frame);
     }
 
     nmd_seek(s, last_ts);
@@ -51,7 +51,7 @@ int main(int ac, char **av)
         fprintf(stderr, "expected frame->ts=%f got frame->ts=%f\n", last_ts, frame->ts);
         ret = -1;
     }
-    nmd_release_frame(frame);
+    nmd_frame_releasep(&frame);
     nmd_freep(&s);
 
     return ret;

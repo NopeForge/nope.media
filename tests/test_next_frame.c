@@ -35,7 +35,7 @@ int main(int ac, char **av)
                    i++, frame->datap[0], frame->ts, frame->width, frame->height,
                    frame->linesizep[0], frame->pix_fmt);
 
-            nmd_release_frame(frame);
+            nmd_frame_releasep(&frame);
         }
     }
 

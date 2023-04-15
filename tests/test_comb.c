@@ -104,7 +104,7 @@ static int action_start(struct nmd_ctx *s, int opt_test_flags)
 
     if ((ret = check_frame(frame, 0, opt_test_flags)) < 0)
         return ret;
-    nmd_release_frame(frame);
+    nmd_frame_releasep(&frame);
     return 0;
 }
 
@@ -128,12 +128,12 @@ static int action_middle(struct nmd_ctx *s, int opt_test_flags)
         (ret = check_frame(f5, 15.0 + 2*increment, opt_test_flags)) < 0)
         return ret;
 
-    nmd_release_frame(f0);
-    nmd_release_frame(f5);
-    nmd_release_frame(f1);
-    nmd_release_frame(f4);
-    nmd_release_frame(f2);
-    nmd_release_frame(f3);
+    nmd_frame_releasep(&f0);
+    nmd_frame_releasep(&f5);
+    nmd_frame_releasep(&f1);
+    nmd_frame_releasep(&f4);
+    nmd_frame_releasep(&f2);
+    nmd_frame_releasep(&f3);
 
     f0 = nmd_get_next_frame(s);
     f1 = nmd_get_frame(s, 16.0);
@@ -148,8 +148,8 @@ static int action_middle(struct nmd_ctx *s, int opt_test_flags)
         return -1;
     }
 
-    nmd_release_frame(f1);
-    nmd_release_frame(f0);
+    nmd_frame_releasep(&f1);
+    nmd_frame_releasep(&f0);
 
     return 0;
 }
@@ -161,11 +161,11 @@ static int action_end(struct nmd_ctx *s, int opt_test_flags)
     f = nmd_get_frame(s, 999999.0);
     if (!f)
         return -1;
-    nmd_release_frame(f);
+    nmd_frame_releasep(&f);
 
     f = nmd_get_frame(s, 99999.0);
     if (f) {
-        nmd_release_frame(f);
+        nmd_frame_releasep(&f);
         return -1;
     }
 

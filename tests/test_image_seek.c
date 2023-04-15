@@ -26,7 +26,7 @@ int main(int ac, char **av)
         fprintf(stderr, "didn't get first image\n");
         return -1;
     }
-    nmd_release_frame(f);
+    nmd_frame_releasep(&f);
 
     nmd_freep(&s);
     return 0;

@@ -37,7 +37,7 @@ int main(int ac, char **av)
                    i++, frame->datap[0], frame->ts, frame->nb_samples, frame->pix_fmt);
             smp += frame->nb_samples;
 
-            nmd_release_frame(frame);
+            nmd_frame_releasep(&frame);
         }
     }
 

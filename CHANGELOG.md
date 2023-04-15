@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `nmd_free()` renamed to `nmd_freep()`
+- `nmd_release_frame()` replaced with `nmd_frame_releasep()`
 
 ## [10.0.0] - 2023-04-05
 

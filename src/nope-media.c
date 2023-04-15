@@ -188,7 +188,7 @@ static void render(struct player *p)
                                        frame->height);
         if (!p->texture) {
             fprintf(stderr, "Failed to allocate SDL texture: %s\n", SDL_GetError());
-            nmd_release_frame(frame);
+            nmd_frame_releasep(&frame);
             return;
         }
         p->texture_width = frame->width;
@@ -199,7 +199,7 @@ static void render(struct player *p)
     SDL_RenderClear(p->renderer);
     SDL_RenderCopy(p->renderer, p->texture, NULL, &dst);
 
-    nmd_release_frame(frame);
+    nmd_frame_releasep(&frame);
 }
 
 static int key_callback(struct player *p, SDL_KeyboardEvent *event)
