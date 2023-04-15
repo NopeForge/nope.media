@@ -349,6 +349,6 @@ NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
 NMDAPI void nmd_release_frame(struct nmd_frame *frame);
 
 /* Close and free everything */
-NMDAPI void nmd_freep(struct nmd_ctx **ss);
+NMDAPI void nmd_freep(struct nmd_ctx **sp);
 
 #endif
