@@ -280,7 +280,7 @@ NMDAPI int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info);
  *
  * The returned frame can be NULL if unchanged from last call.
  *
- * The returned frame needs to be released using nmd_release_frame().
+ * The returned frame needs to be released using nmd_frame_releasep().
  *
  * Requesting a negative time is equivalent to calling nmd_prefetch().
  *
@@ -333,7 +333,7 @@ NMDAPI int nmd_seek(struct nmd_ctx *s, double t);
 /**
  * Get the next frame.
  *
- * The returned frame needs to be released using nmd_release_frame().
+ * The returned frame needs to be released using nmd_frame_releasep().
  *
  * At EOF nmd_get_next_frame() will return NULL. You can call
  * nmd_get_next_frame() to restart the decoding from the beginning.
@@ -346,7 +346,7 @@ NMDAPI int nmd_seek(struct nmd_ctx *s, double t);
 NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
 
 /* Release a frame obtained with nmd_get_frame() */
-NMDAPI void nmd_release_frame(struct nmd_frame *frame);
+NMDAPI void nmd_frame_releasep(struct nmd_frame **framep);
 
 /* Close and free everything */
 NMDAPI void nmd_freep(struct nmd_ctx **sp);

@@ -532,14 +532,16 @@ end:
     return ret;
 }
 
-void nmd_release_frame(struct nmd_frame *frame)
+void nmd_frame_releasep(struct nmd_frame **framep)
 {
+    struct nmd_frame *frame = *framep;
     if (!frame)
         return;
 
     AVFrame *avframe = frame->internal;
     av_frame_free(&avframe);
     av_free(frame);
+    *framep = NULL;
 }
 
 static AVFrame *pop_frame(struct nmd_ctx *s)

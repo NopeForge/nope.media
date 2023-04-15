@@ -40,8 +40,8 @@ int main(int ac, char **av)
         return -1;
     }
 
-    nmd_release_frame(f1);
-    nmd_release_frame(f2);
+    nmd_frame_releasep(&f1);
+    nmd_frame_releasep(&f2);
     nmd_freep(&s1);
     nmd_freep(&s2);
     return 0;

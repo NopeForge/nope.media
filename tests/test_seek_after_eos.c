@@ -43,7 +43,7 @@ int main(int ac, char **av)
         if (!frame) {
             break;
         }
-        nmd_release_frame(frame);
+        nmd_frame_releasep(&frame);
         nb_frames++;
     }
 
@@ -68,7 +68,7 @@ int main(int ac, char **av)
                     ret = -1;
                     goto done;
                 }
-                nmd_release_frame(frame);
+                nmd_frame_releasep(&frame);
             }
 
             if (k == 0) {
@@ -91,13 +91,13 @@ int main(int ac, char **av)
                 if (frame) {
                     fprintf(stderr, "unexpected frame at %f with ts=%f\n", 1000.0f, frame->ts);
                     ret = -1;
-                    nmd_release_frame(frame);
+                    nmd_frame_releasep(&frame);
                     goto done;
                 }
             } else if (k == 3) {
                 frame = NULL;
             }
-            nmd_release_frame(frame);
+            nmd_frame_releasep(&frame);
             nmd_freep(&s);
         }
     }

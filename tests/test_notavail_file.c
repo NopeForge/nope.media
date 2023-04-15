@@ -24,9 +24,12 @@ int main(int ac, char **av)
     nmd_set_option(s, "auto_hwaccel", 0);
     nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
     nmd_set_log_callback(s, (void*)fake_filename, log_callback);
-    nmd_release_frame(nmd_get_frame(s, -1));
-    nmd_release_frame(nmd_get_frame(s, 1.0));
-    nmd_release_frame(nmd_get_frame(s, 3.0));
+    struct nmd_frame *frame = nmd_get_frame(s, -1);
+    nmd_frame_releasep(&frame);
+    frame = nmd_get_frame(s, 1.0);
+    nmd_frame_releasep(&frame);
+    frame = nmd_get_frame(s, 3.0);
+    nmd_frame_releasep(&frame);
     nmd_freep(&s);
     return 0;
 }

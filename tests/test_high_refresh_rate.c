@@ -25,11 +25,11 @@ int main(int ac, char **av)
     f = nmd_get_frame(s, 0.);
     if (!f)
         return -1;
-    nmd_release_frame(f);
+    nmd_frame_releasep(&f);
     f = nmd_get_frame(s, t);
     if (f && f->ts > t) {
         fprintf(stderr, "unexpected frame at %f with ts=%f\n", t, f->ts);
-        nmd_release_frame(f);
+        nmd_frame_releasep(&f);
         return -1;
     }
     nmd_freep(&s);

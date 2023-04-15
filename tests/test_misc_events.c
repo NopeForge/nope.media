@@ -40,7 +40,7 @@ int main(int ac, char **av)
         nmd_freep(&s);
         return -1;
     }
-    nmd_release_frame(f);
+    nmd_frame_releasep(&f);
     nmd_stop(s);
     f = nmd_get_frame(s, 83.5);
     if (!f) {
@@ -48,6 +48,6 @@ int main(int ac, char **av)
         return -1;
     }
     nmd_freep(&s);
-    nmd_release_frame(f);
+    nmd_frame_releasep(&f);
     return 0;
 }

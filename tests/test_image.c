@@ -27,7 +27,7 @@ int main(int ac, char **av)
         fprintf(stderr, "didn't get an image\n");
         return -1;
     }
-    nmd_release_frame(f);
+    nmd_frame_releasep(&f);
 
     if (nmd_get_info(s, &info) < 0) {
         fprintf(stderr, "can not fetch image info\n");
@@ -39,7 +39,7 @@ int main(int ac, char **av)
 
     f = nmd_get_frame(s, 12.3);
     if (f) {
-        nmd_release_frame(f);
+        nmd_frame_releasep(&f);
         fprintf(stderr, "we got a new frame even though the source is an image\n");
         return -1;
     }
