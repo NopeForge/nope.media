@@ -224,7 +224,7 @@ static int exec_comb(const char *filename, uint64_t comb, int opt_test_flags, in
             break;
     }
 
-    nmd_free(&s);
+    nmd_freep(&s);
     return ret;
 }
 

@@ -47,7 +47,7 @@ int main(int ac, char **av)
         nb_frames++;
     }
 
-    nmd_free(&s);
+    nmd_freep(&s);
 
     for (int k = 0; k < 4; k++) {
         for (int j = 0; j < sizeof(ts)/sizeof(*ts); j++) {
@@ -98,12 +98,12 @@ int main(int ac, char **av)
                 frame = NULL;
             }
             nmd_release_frame(frame);
-            nmd_free(&s);
+            nmd_freep(&s);
         }
     }
 
 done:
-    nmd_free(&s);
+    nmd_freep(&s);
 
     return ret;
 }

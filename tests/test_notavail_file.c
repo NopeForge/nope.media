@@ -27,6 +27,6 @@ int main(int ac, char **av)
     nmd_release_frame(nmd_get_frame(s, -1));
     nmd_release_frame(nmd_get_frame(s, 1.0));
     nmd_release_frame(nmd_get_frame(s, 3.0));
-    nmd_free(&s);
+    nmd_freep(&s);
     return 0;
 }
