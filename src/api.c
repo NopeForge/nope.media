@@ -540,8 +540,7 @@ void nmd_frame_releasep(struct nmd_frame **framep)
 
     AVFrame *avframe = frame->internal;
     av_frame_free(&avframe);
-    av_free(frame);
-    *framep = NULL;
+    av_freep(framep);
 }
 
 static AVFrame *pop_frame(struct nmd_ctx *s)
