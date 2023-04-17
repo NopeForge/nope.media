@@ -345,7 +345,10 @@ NMDAPI int nmd_seek(struct nmd_ctx *s, double t);
  */
 NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
 
-/* Release a frame obtained with nmd_get_frame() */
+/**
+ * Release a frame obtained with nmd_get_frame(), nmd_get_frame_ms() or
+ * nmd_get_next_frame().
+ */
 NMDAPI void nmd_frame_releasep(struct nmd_frame **framep);
 
 /**
