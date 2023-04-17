@@ -534,11 +534,12 @@ end:
 
 void nmd_release_frame(struct nmd_frame *frame)
 {
-    if (frame) {
-        AVFrame *avframe = frame->internal;
-        av_frame_free(&avframe);
-        av_free(frame);
-    }
+    if (!frame)
+        return;
+
+    AVFrame *avframe = frame->internal;
+    av_frame_free(&avframe);
+    av_free(frame);
 }
 
 static AVFrame *pop_frame(struct nmd_ctx *s)
