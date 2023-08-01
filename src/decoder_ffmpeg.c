@@ -1,6 +1,7 @@
 /*
  * This file is part of nope.media.
  *
+ * Copyright (c) 2023 Matthieu Bouron <matthieu.bouron@gmail.com>
  * Copyright (c) 2015 Stupeflix
  *
  * nope.media is free software; you can redistribute it and/or
@@ -30,6 +31,10 @@
 #include "decoders.h"
 #include "internal.h"
 #include "log.h"
+
+struct ffdec_context {
+    int extra_hw_frames;
+};
 
 #if HAVE_MEDIACODEC_HWACCEL
 #include <libavcodec/mediacodec.h>
@@ -103,6 +108,58 @@ static int init_mediacodec(struct decoder_ctx *ctx)
 
 #if HAVE_VAAPI_HWACCEL
 #include <libavutil/hwcontext_vaapi.h>
+
+static enum AVPixelFormat get_format_vaapi(struct AVCodecContext *avctx,
+                                           const enum AVPixelFormat *pix_fmts)
+{
+    struct decoder_ctx *ctx = avctx->opaque;
+    struct ffdec_context *ffdec_ctx = ctx->priv_data;
+
+    const enum AVPixelFormat *p = NULL;
+
+    for (p = pix_fmts; *p != AV_PIX_FMT_NONE; p++) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(*p);
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+            break;
+        }
+
+        if (*p != AV_PIX_FMT_VAAPI)
+            continue;
+
+        AVBufferRef *fctx_ref = NULL;
+        int ret = avcodec_get_hw_frames_parameters(ctx->avctx, avctx->hw_device_ctx, *p, &fctx_ref);
+        if (ret < 0)
+            continue;
+
+        AVHWFramesContext *fctx = (void *)fctx_ref->data;
+        if (fctx->initial_pool_size)
+            fctx->initial_pool_size += ffdec_ctx->extra_hw_frames;
+
+        ret = av_hwframe_ctx_init(fctx_ref);
+        if (ret < 0) {
+            av_buffer_unref(&fctx_ref);
+            return ret;
+        }
+
+        avctx->hw_frames_ctx = fctx_ref;
+
+        break;
+    }
+
+    return *p;
+}
+
+static int get_extra_hw_frames(const struct nmdi_opts *opts)
+{
+    /* The maximum number of extra hw frames (in the worst case scenario) is
+     * computed from:
+     * - The maximum number of frames on flight in the decoding module: max_nb_frames + 1
+     * - The maximum number of frames on flight in the filtering module: max_nb_sink + 1
+     * - The maximum number of frames on flight in the API module: 2 (one cached, one candidate)
+     *   The maximum number of retained frames by the user: 3 (should be enough)
+     */
+    return opts->max_nb_frames + 1 + opts->max_nb_sink + 1 + 2 + 3;
+}
 
 static const struct {
     int profile;
@@ -211,9 +268,10 @@ end:
     return ret;
 }
 
-static int init_vaapi(struct decoder_ctx *ctx)
+static int init_vaapi(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 {
     AVCodecContext *avctx = ctx->avctx;
+    struct ffdec_context *ffdec_ctx = ctx->priv_data;
 
     if (avctx->codec_id != AV_CODEC_ID_H264 &&
         avctx->codec_id != AV_CODEC_ID_HEVC)
@@ -227,6 +285,8 @@ static int init_vaapi(struct decoder_ctx *ctx)
         return ret;
     else if (ret == 0)
         return AVERROR_DECODER_NOT_FOUND;
+
+    ffdec_ctx->extra_hw_frames = get_extra_hw_frames(opts);
 
     AVBufferRef *hw_device_ctx_ref = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_VAAPI);
     if (!hw_device_ctx_ref)
@@ -244,6 +304,8 @@ static int init_vaapi(struct decoder_ctx *ctx)
 
     avctx->hw_device_ctx = hw_device_ctx_ref;
     avctx->thread_count = 1;
+    avctx->get_format = get_format_vaapi;
+    avctx->opaque = ctx;
 
     const AVCodec *codec = avcodec_find_decoder(avctx->codec_id);
     ret = avcodec_open2(avctx, codec, NULL);
@@ -268,7 +330,7 @@ static int ffdec_init_hw(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 #if HAVE_MEDIACODEC_HWACCEL
     return init_mediacodec(ctx);
 #elif HAVE_VAAPI_HWACCEL
-    return init_vaapi(ctx);
+    return init_vaapi(ctx, opts);
 #endif
     return AVERROR_DECODER_NOT_FOUND;
 }
@@ -369,4 +431,5 @@ const struct decoder nmdi_decoder_ffmpeg_hw = {
     .init        = ffdec_init_hw,
     .push_packet = ffdec_push_packet,
     .flush       = ffdec_flush,
+    .priv_data_size = sizeof(struct ffdec_context),
 };
