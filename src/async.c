@@ -202,7 +202,6 @@ int nmdi_async_pop_frame(struct async_context *actx, AVFrame **framep)
     if (ret < 0) {
         TRACE(actx, "couldn't fetch frame from sink because %s", av_err2str(ret));
         av_thread_message_queue_set_err_send(actx->sink_queue, ret);
-        (void)nmdi_async_stop(actx);
         return ret;
     }
     av_assert0(msg.type == MSG_FRAME);

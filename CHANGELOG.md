@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Fix VAAPI errors that were caused by an undersized surface pool for some video
   streams
+- Fix VAAPI race conditions (leading to crashes) happening notably at EOF (or
+  any error) while the user is still using the VAAPI frames.
 
 ## [11.0.0] - 2023-07-27
 ### Added
