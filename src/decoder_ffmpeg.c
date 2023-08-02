@@ -104,6 +104,113 @@ static int init_mediacodec(struct decoder_ctx *ctx)
 #if HAVE_VAAPI_HWACCEL
 #include <libavutil/hwcontext_vaapi.h>
 
+static const struct {
+    int profile;
+    enum AVCodecID codec_id;
+    VAProfile va_profile;
+} va_profile_map[] = {
+    {FF_PROFILE_H264_CONSTRAINED_BASELINE, AV_CODEC_ID_H264, VAProfileH264ConstrainedBaseline},
+    {FF_PROFILE_H264_MAIN,                 AV_CODEC_ID_H264, VAProfileH264Main},
+    {FF_PROFILE_H264_HIGH,                 AV_CODEC_ID_H264, VAProfileH264High},
+    {FF_PROFILE_H264_HIGH_10,              AV_CODEC_ID_H264, VAProfileH264High10},
+
+    {FF_PROFILE_HEVC_MAIN,                 AV_CODEC_ID_HEVC, VAProfileHEVCMain},
+    {FF_PROFILE_HEVC_MAIN_10,              AV_CODEC_ID_HEVC, VAProfileHEVCMain10},
+    {FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   AV_CODEC_ID_HEVC, VAProfileHEVCMain},
+};
+
+static int is_entrypoint_supported(const VAEntrypoint *entrypoint_list, int num_entrypoints, VAEntrypoint entrypoint)
+{
+    for (int i = 0; i < num_entrypoints; i++) {
+        if (entrypoint_list[i] == entrypoint)
+            return 1;
+    }
+    return 0;
+}
+
+static VAProfile av_codec_to_va_profile(enum AVCodecID codec_id, int profile)
+{
+    for (int i = 0; i < FF_ARRAY_ELEMS(va_profile_map); i++) {
+        if (va_profile_map[i].codec_id == codec_id &&
+            va_profile_map[i].profile  == profile)
+            return va_profile_map[i].va_profile;
+    }
+    return VAProfileNone;
+}
+
+static int is_codec_supported(struct decoder_ctx *ctx)
+{
+    int ret = 0;
+    AVCodecContext *avctx = ctx->avctx;
+    AVCodecParameters *codecpar = NULL;
+    VADisplay display = ctx->opaque;
+    const int max_num_profiles = vaMaxNumProfiles(display);
+    const int max_num_entrypoints = vaMaxNumEntrypoints(display);
+
+    VAProfile *profile_list = av_mallocz(max_num_profiles * sizeof(*profile_list));
+    VAEntrypoint *entrypoint_list = av_mallocz(max_num_entrypoints * sizeof(*entrypoint_list));
+
+    if (!profile_list || !entrypoint_list) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    int num_profiles = 0;
+    VAStatus status = vaQueryConfigProfiles(display, profile_list, &num_profiles);
+    if (status != VA_STATUS_SUCCESS) {
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    codecpar = avcodec_parameters_alloc();
+    if (!codecpar) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
+    ret = avcodec_parameters_from_context(codecpar, avctx);
+    if (ret < 0)
+        goto end;
+
+    VAProfile profile = av_codec_to_va_profile(codecpar->codec_id, codecpar->profile);
+    if (profile == VAProfileNone) {
+        ret = 0;
+        goto end;
+    }
+
+    int num_entrypoints = 0;
+    status = vaQueryConfigEntrypoints(display, profile, entrypoint_list, &num_entrypoints);
+    if (status == VA_STATUS_ERROR_UNSUPPORTED_PROFILE) {
+        ret = 0;
+        goto end;
+    }
+
+    if (status != VA_STATUS_SUCCESS) {
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+
+    if (!is_entrypoint_supported(entrypoint_list, num_entrypoints, VAEntrypointVLD)) {
+        ret = 0;
+        goto end;
+    }
+
+    VAConfigID config = VA_INVALID_ID;
+    status = vaCreateConfig(display, profile, VAEntrypointVLD, NULL, 0, &config);
+    if (status != VA_STATUS_SUCCESS) {
+        ret = AVERROR_EXTERNAL;
+        goto end;
+    }
+    vaDestroyConfig(display, config);
+
+    ret = 1;
+end:
+    av_freep(&profile_list);
+    av_freep(&entrypoint_list);
+    avcodec_parameters_free(&codecpar);
+    return ret;
+}
+
 static int init_vaapi(struct decoder_ctx *ctx)
 {
     AVCodecContext *avctx = ctx->avctx;
@@ -115,6 +222,12 @@ static int init_vaapi(struct decoder_ctx *ctx)
     if (!ctx->opaque)
         return AVERROR_DECODER_NOT_FOUND;
 
+    int ret = is_codec_supported(ctx);
+    if (ret < 0)
+        return ret;
+    else if (ret == 0)
+        return AVERROR_DECODER_NOT_FOUND;
+
     AVBufferRef *hw_device_ctx_ref = av_hwdevice_ctx_alloc(AV_HWDEVICE_TYPE_VAAPI);
     if (!hw_device_ctx_ref)
         return -1;
@@ -123,14 +236,14 @@ static int init_vaapi(struct decoder_ctx *ctx)
     AVVAAPIDeviceContext *hw_ctx = hw_device_ctx->hwctx;
     hw_ctx->display = ctx->opaque;
 
-    int ret = av_hwdevice_ctx_init(hw_device_ctx_ref);
+    ret = av_hwdevice_ctx_init(hw_device_ctx_ref);
     if (ret < 0) {
         av_buffer_unref(&hw_device_ctx_ref);
         return ret;
     }
 
     avctx->hw_device_ctx = hw_device_ctx_ref;
-    avctx->thread_count = 0;
+    avctx->thread_count = 1;
 
     const AVCodec *codec = avcodec_find_decoder(avctx->codec_id);
     ret = avcodec_open2(avctx, codec, NULL);
