@@ -113,7 +113,7 @@ static int send_wait_ctl_message(struct async_context *actx,
 }
 
 /* There might be some actions still processing in the control thread, so we
- * send a sync message to make sure every actions has been processed */
+ * send a sync message to make sure every actions have been processed */
 static int sync_control_thread(struct async_context *actx)
 {
     if (actx->need_sync) {
