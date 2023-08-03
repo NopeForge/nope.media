@@ -22,6 +22,7 @@
 #define ASYNC_H
 
 #include <stdint.h>
+#include <libavutil/frame.h>
 
 #include "nopemd.h"
 #include "opts.h"
