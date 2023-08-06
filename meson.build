@@ -167,6 +167,7 @@ if get_option('tests')
   exe_names = [
     'audio',
     'audio_seek',
+    'audio_start_end_time',
     'comb',
     'high_refresh_rate',
     'image',
@@ -198,6 +199,7 @@ if get_option('tests')
   tests = {
     'Audio seek':                         {'test': 'audio_seek',        'args': [media]},
     'Audio':                              {'test': 'audio',             'args': [media]},
+    'Audio start/end time':               {'test': 'audio_start_end_time', 'args': [media]},
     'Combination audio':                  {'test': 'comb',              'args': [media, 0b100.to_string()]},
     'Combination audio+end':              {'test': 'comb',              'args': [media, 0b110.to_string()]},
     'Combination audio+end+start':        {'test': 'comb',              'args': [media, 0b111.to_string()]},
