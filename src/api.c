@@ -464,7 +464,7 @@ static int get_nmd_col_trc(int avcol_trc)
 /* Return the frame only if different from previous one. We do not make a
  * simple pointer check because of the frame reference counting (and thus
  * pointer reuse, depending on many parameters)  */
-static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame)
+static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame, int status)
 {
     struct nmd_frame *ret = NULL;
     const struct nmdi_opts *o = &s->opts;
@@ -705,11 +705,11 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret_frame(s, NULL);
+        return ret_frame(s, NULL, ret);
 
     if (t64 < 0) {
         nmd_start(s);
-        return ret_frame(s, NULL);
+        return ret_frame(s, NULL, 0);
     }
 
     const int64_t vt = get_media_time(o, t64);
@@ -718,13 +718,13 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
     if (s->last_ts != AV_NOPTS_VALUE && stream_time(s, vt) >= s->last_ts &&
         s->last_pushed_frame_ts == s->last_ts) {
         TRACE(s, "requested the last frame again");
-        return ret_frame(s, NULL);
+        return ret_frame(s, NULL, 0);
     }
 
     if (s->first_ts != AV_NOPTS_VALUE && stream_time(s, vt) <= s->first_ts &&
         s->last_pushed_frame_ts == s->first_ts) {
         TRACE(s, "requested the first frame again");
-        return ret_frame(s, NULL);
+        return ret_frame(s, NULL, 0);
     }
 
     AVFrame *candidate = NULL;
@@ -747,7 +747,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         int ret = pop_frame(s, &candidate);
         if (!candidate || ret < 0) {
             TRACE(s, "can not get a single frame for this media");
-            return ret_frame(s, NULL);
+            return ret_frame(s, NULL, ret);
         }
 
         /* At this point we can assume the stream timebase is known because
@@ -770,7 +770,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
              * candidate if the first time requested is not actually 0 */
             if (t64 == 0)
                 s->first_ts = candidate->pts;
-            return ret_frame(s, candidate);
+            return ret_frame(s, candidate, ret);
         }
 
     } else {
@@ -786,7 +786,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
     }
 
     if (!diff)
-        return ret_frame(s, candidate);
+        return ret_frame(s, candidate, 0);
 
     /* Check if a seek is needed */
     const int forward_seek = av_compare_ts(diff, s->st_timebase, o->dist_time_seek_trigger64, AV_TIME_BASE_Q) >= 0;
@@ -819,7 +819,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         ret = nmdi_async_seek(s->actx, vt);
         if (ret < 0) {
             av_frame_free(&candidate);
-            return ret_frame(s, NULL);
+            return ret_frame(s, NULL, ret);
         }
     }
 
@@ -848,7 +848,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
                 av_frame_free(&candidate);
                 av_frame_free(&s->cached_frame);
                 s->cached_frame = NULL;
-                return ret_frame(s, next);
+                return ret_frame(s, next, 0);
             }
         }
 
@@ -872,7 +872,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         }
     }
 
-    return ret_frame(s, candidate);
+    return ret_frame(s, candidate, ret);
 }
 
 struct nmd_frame *nmd_get_frame(struct nmd_ctx *s, double t)
@@ -886,14 +886,14 @@ struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s)
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret_frame(s, NULL);
+        return ret_frame(s, NULL, ret);
 
     AVFrame *frame = NULL;
     ret = pop_frame(s, &frame);
     if (!frame || ret < 0)
-        return ret_frame(s, NULL);
+        return ret_frame(s, NULL, ret);
 
-    return ret_frame(s, frame);
+    return ret_frame(s, frame, ret);
 }
 
 int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info)
