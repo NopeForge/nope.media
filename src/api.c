@@ -565,8 +565,9 @@ int nmd_mc_frame_render_and_releasep(struct nmd_frame **framep)
 #endif
 }
 
-static AVFrame *pop_frame(struct nmd_ctx *s)
+static int pop_frame(struct nmd_ctx *s, AVFrame **framep)
 {
+    int ret = 0;
     AVFrame *frame = NULL;
 
     if (s->cached_frame) {
@@ -578,7 +579,7 @@ static AVFrame *pop_frame(struct nmd_ctx *s)
         /* Stream time base is required to interpret the frame PTS */
         if (!s->st_timebase.den) {
             struct nmd_info info;
-            int ret = nmdi_async_fetch_info(s->actx, &info);
+            ret = nmdi_async_fetch_info(s->actx, &info);
             if (ret < 0) {
                 TRACE(s, "unable to fetch info %s", av_err2str(ret));
             } else {
@@ -590,7 +591,7 @@ static AVFrame *pop_frame(struct nmd_ctx *s)
         }
 
         if (s->st_timebase.den) {
-            int ret = nmdi_async_pop_frame(s->actx, &frame);
+            ret = nmdi_async_pop_frame(s->actx, &frame);
             if (ret < 0)
                 TRACE(s, "poped a message raising %s", av_err2str(ret));
         }
@@ -612,7 +613,8 @@ static AVFrame *pop_frame(struct nmd_ctx *s)
     }
 
     TRACE(s, "pop frame %p", frame);
-    return frame;
+    *framep = frame;
+    return ret;
 }
 
 #define SYNTH_FRAME 0
@@ -742,8 +744,8 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         }
 
         TRACE(s, "no frame ever pushed yet, pop a candidate");
-        candidate = pop_frame(s);
-        if (!candidate) {
+        int ret = pop_frame(s, &candidate);
+        if (!candidate || ret < 0) {
             TRACE(s, "can not get a single frame for this media");
             return ret_frame(s, NULL);
         }
@@ -826,9 +828,10 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         const int next_is_cached_frame = !!s->cached_frame;
 
         TRACE(s, "grab another frame");
-        AVFrame *next = pop_frame(s);
+        AVFrame *next = NULL;
+        int ret = pop_frame(s, &next);
         av_assert0(!s->cached_frame);
-        if (!next) {
+        if (!next || ret < 0) {
             TRACE(s, "no more frame");
             break;
         }
@@ -885,7 +888,11 @@ struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s)
     if (ret < 0)
         return ret_frame(s, NULL);
 
-    AVFrame *frame = pop_frame(s);
+    AVFrame *frame = NULL;
+    ret = pop_frame(s, &frame);
+    if (!frame || ret < 0)
+        return ret_frame(s, NULL);
+
     return ret_frame(s, frame);
 }
 
