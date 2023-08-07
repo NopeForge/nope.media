@@ -61,6 +61,7 @@ struct nmd_ctx {
     int64_t last_frame_poped_ts;
     int64_t first_ts;
     int64_t last_ts;
+    int eof; // set if the latest frame returned was NULL and meant EOF
 
     int64_t entering_time;
     const char *cur_func_name;
@@ -468,6 +469,8 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame, int status
 {
     struct nmd_frame *ret = NULL;
     const struct nmdi_opts *o = &s->opts;
+
+    s->eof = !frame && (status == AVERROR_EOF || status == AVERROR_EXIT);
 
     if (!frame) {
         LOG(s, DEBUG, "no frame to return");
@@ -887,6 +890,16 @@ struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s)
     int ret = configure_context(s);
     if (ret < 0)
         return ret_frame(s, NULL, ret);
+
+    if (s->eof) {
+        av_frame_free(&s->cached_frame);
+        s->last_pushed_frame_ts = AV_NOPTS_VALUE;
+
+        const struct nmdi_opts *o = &s->opts;
+        ret = nmdi_async_seek(s->actx, o->start_time64);
+        if (ret < 0)
+            LOG(s, ERROR, "Failed to seek back to beginning of the file");
+    }
 
     AVFrame *frame = NULL;
     ret = pop_frame(s, &frame);
