@@ -169,7 +169,9 @@ static const struct {
     {FF_PROFILE_H264_CONSTRAINED_BASELINE, AV_CODEC_ID_H264, VAProfileH264ConstrainedBaseline},
     {FF_PROFILE_H264_MAIN,                 AV_CODEC_ID_H264, VAProfileH264Main},
     {FF_PROFILE_H264_HIGH,                 AV_CODEC_ID_H264, VAProfileH264High},
+#if VA_CHECK_VERSION(1, 18, 0)
     {FF_PROFILE_H264_HIGH_10,              AV_CODEC_ID_H264, VAProfileH264High10},
+#endif
 
     {FF_PROFILE_HEVC_MAIN,                 AV_CODEC_ID_HEVC, VAProfileHEVCMain},
     {FF_PROFILE_HEVC_MAIN_10,              AV_CODEC_ID_HEVC, VAProfileHEVCMain10},
