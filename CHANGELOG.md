@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Fixed
-- Fix build with libva < 1.18
+- Fix build with VA-API < 1.18
 
 ## [11.0.1] - 2023-08-07
 ### Fixed
