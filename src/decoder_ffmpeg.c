@@ -176,6 +176,11 @@ static const struct {
     {FF_PROFILE_HEVC_MAIN,                 AV_CODEC_ID_HEVC, VAProfileHEVCMain},
     {FF_PROFILE_HEVC_MAIN_10,              AV_CODEC_ID_HEVC, VAProfileHEVCMain10},
     {FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   AV_CODEC_ID_HEVC, VAProfileHEVCMain},
+
+#if VA_CHECK_VERSION(1, 8, 0)
+    {FF_PROFILE_AV1_MAIN,                  AV_CODEC_ID_AV1,  VAProfileAV1Profile0},
+    {FF_PROFILE_AV1_HIGH,                  AV_CODEC_ID_AV1,  VAProfileAV1Profile1},
+#endif
 };
 
 static int is_entrypoint_supported(const VAEntrypoint *entrypoint_list, int num_entrypoints, VAEntrypoint entrypoint)
@@ -270,13 +275,37 @@ end:
     return ret;
 }
 
+static const AVCodec *find_vaapi_decoder(enum AVCodecID codec_id)
+{
+    void *i = NULL;
+    const AVCodec *codec = NULL;
+    while ((codec = av_codec_iterate(&i)) != NULL) {
+        if (codec->type != AVMEDIA_TYPE_VIDEO ||
+            codec->id   != codec_id           ||
+            !av_codec_is_decoder(codec))
+            continue;
+
+        int n = 0;
+        const AVCodecHWConfig *cfg = NULL;
+        while ((cfg = avcodec_get_hw_config(codec, n++)) != NULL) {
+            if (cfg->methods & AV_CODEC_HW_CONFIG_METHOD_HW_FRAMES_CTX &&
+                cfg->methods & AV_CODEC_HW_CONFIG_METHOD_HW_DEVICE_CTX &&
+                cfg->pix_fmt == AV_PIX_FMT_VAAPI) {
+                return codec;
+            }
+        }
+    }
+    return avcodec_find_decoder(codec_id);
+}
+
 static int init_vaapi(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 {
     AVCodecContext *avctx = ctx->avctx;
     struct ffdec_context *ffdec_ctx = ctx->priv_data;
 
     if (avctx->codec_id != AV_CODEC_ID_H264 &&
-        avctx->codec_id != AV_CODEC_ID_HEVC)
+        avctx->codec_id != AV_CODEC_ID_HEVC &&
+        avctx->codec_id != AV_CODEC_ID_AV1)
         return AVERROR_DECODER_NOT_FOUND;
 
     if (!ctx->opaque)
@@ -309,7 +338,7 @@ static int init_vaapi(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
     avctx->get_format = get_format_vaapi;
     avctx->opaque = ctx;
 
-    const AVCodec *codec = avcodec_find_decoder(avctx->codec_id);
+    const AVCodec *codec = find_vaapi_decoder(avctx->codec_id);
     ret = avcodec_open2(avctx, codec, NULL);
     if (ret < 0) {
         av_buffer_unref(&avctx->hw_device_ctx);
