@@ -48,7 +48,8 @@ static int init_mediacodec(struct decoder_ctx *ctx)
         avctx->codec_id != AV_CODEC_ID_HEVC  &&
         avctx->codec_id != AV_CODEC_ID_MPEG4 &&
         avctx->codec_id != AV_CODEC_ID_VP8   &&
-        avctx->codec_id != AV_CODEC_ID_VP9)
+        avctx->codec_id != AV_CODEC_ID_VP9   &&
+        avctx->codec_id != AV_CODEC_ID_AV1)
         return AVERROR_DECODER_NOT_FOUND;
 
     const char *codec_name = NULL;
@@ -68,6 +69,9 @@ static int init_mediacodec(struct decoder_ctx *ctx)
         break;
     case AV_CODEC_ID_VP9:
         codec_name = "vp9_mediacodec";
+        break;
+    case AV_CODEC_ID_AV1:
+        codec_name = "av1_mediacodec";
         break;
     default:
         av_assert0(0);
