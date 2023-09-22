@@ -40,42 +40,33 @@ struct ffdec_context {
 #include <libavcodec/mediacodec.h>
 #include <libavutil/hwcontext_mediacodec.h>
 
+static const char *get_mediacodec_codec_name(enum AVCodecID codec_id)
+{
+    switch (codec_id) {
+    case AV_CODEC_ID_H264:
+        return "h264_mediacodec";
+    case AV_CODEC_ID_HEVC:
+        return "hevc_mediacodec";
+    case AV_CODEC_ID_MPEG4:
+        return "mpeg4_mediacodec";
+    case AV_CODEC_ID_VP8:
+        return "vp8_mediacodec";
+    case AV_CODEC_ID_VP9:
+        return "vp9_mediacodec";
+    case AV_CODEC_ID_AV1:
+        return "av1_mediacodec";
+    default:
+        return NULL;
+    }
+}
+
 static int init_mediacodec(struct decoder_ctx *ctx)
 {
     AVCodecContext *avctx = ctx->avctx;
 
-    if (avctx->codec_id != AV_CODEC_ID_H264  &&
-        avctx->codec_id != AV_CODEC_ID_HEVC  &&
-        avctx->codec_id != AV_CODEC_ID_MPEG4 &&
-        avctx->codec_id != AV_CODEC_ID_VP8   &&
-        avctx->codec_id != AV_CODEC_ID_VP9   &&
-        avctx->codec_id != AV_CODEC_ID_AV1)
+    const char *codec_name = get_mediacodec_codec_name(avctx->codec_id);
+    if (!codec_name)
         return AVERROR_DECODER_NOT_FOUND;
-
-    const char *codec_name = NULL;
-
-    switch (avctx->codec_id) {
-    case AV_CODEC_ID_H264:
-        codec_name = "h264_mediacodec";
-        break;
-    case AV_CODEC_ID_HEVC:
-        codec_name = "hevc_mediacodec";
-        break;
-    case AV_CODEC_ID_MPEG4:
-        codec_name = "mpeg4_mediacodec";
-        break;
-    case AV_CODEC_ID_VP8:
-        codec_name = "vp8_mediacodec";
-        break;
-    case AV_CODEC_ID_VP9:
-        codec_name = "vp9_mediacodec";
-        break;
-    case AV_CODEC_ID_AV1:
-        codec_name = "av1_mediacodec";
-        break;
-    default:
-        av_assert0(0);
-    }
 
     const AVCodec *codec = avcodec_find_decoder_by_name(codec_name);
     if (!codec)
