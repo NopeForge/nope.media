@@ -16,7 +16,12 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86_64, arm, aarch64]
-        ffmpeg_version: ["4.4"]
+        ffmpeg_version: ["4.4", "6.1"]
+        include:
+          - ffmpeg_version: "4.4"
+            ff_opts: "--enable-rdft"
+          - ffmpeg_version: "6.1"
+            ff_opts: ""
 
     steps:
     - uses: actions/checkout@v3
@@ -46,7 +51,7 @@ jobs:
         ./configure \
         --disable-everything --disable-doc --disable-static --disable-autodetect --disable-programs \
         --enable-shared --enable-cross-compile --enable-jni --enable-mediacodec --enable-hwaccels  \
-        --enable-avdevice --enable-swresample --enable-rdft \
+        --enable-avdevice --enable-swresample ${{ matrix.ff_opts }} \
         --arch=${{ matrix.arch }} --target-os=android \
         --cross-prefix=$NDK_BIN_PATH/llvm- \
         --cc=$NDK_BIN_PATH/${compiler}-linux-${android_suffix}28-clang \
