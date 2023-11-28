@@ -1,0 +1,48 @@
+# Warning: this name must stay in sync with the badges referenced in the README
+name: 'coverity scan'
+
+on:
+  schedule:
+      - cron: "0 0 * * *"  # Run daily at midnight
+  workflow_dispatch:
+
+jobs:
+  linux:
+
+    runs-on: ubuntu-22.04
+
+    if: ${{ github.repository_owner == 'NopeForge' }}
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        sudo apt -y update
+        sudo apt -y install meson ninja-build
+        sudo apt -y install libsdl2-dev libva-dev
+        sudo apt -y install libavcodec-dev libavutil-dev libavformat-dev libavdevice-dev libavfilter-dev libswscale-dev libswresample-dev libpostproc-dev
+
+    - name: Download Coverity Build Tool
+      run: |
+        wget -q https://scan.coverity.com/download/cxx/linux64 --post-data "token=${{ secrets.COVERITY_SCAN_TOKEN }}&project=nope.media" -O cov-analysis-linux64.tar.gz
+        mkdir cov-analysis-linux64
+        tar xzf cov-analysis-linux64.tar.gz --strip 1 -C cov-analysis-linux64
+
+    - name: Build
+      run: |
+        export PATH="$(pwd)/cov-analysis-linux64/bin:$PATH"
+        meson setup --buildtype debug builddir -Dvaapi=enabled
+        cov-build --dir cov-int ninja -C builddir
+
+    - name: Submit the result to Coverity Scan
+      run: |
+        revision=$(git rev-parse --short HEAD)
+        tar czvf nmd.tgz cov-int
+        curl \
+          --form project=nope.media \
+          --form token=${{ secrets.COVERITY_SCAN_TOKEN }} \
+          --form email=contact@nopeforge.org \
+          --form file=@nmd.tgz \
+          --form version=main \
+          --form description="nope.media-$revision" \
+          https://scan.coverity.com/builds?project=nope.media
