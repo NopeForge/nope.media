@@ -1,6 +1,7 @@
 /*
  * This file is part of nope.media.
  *
+ * Copyright (c) 2023 Nope Forge
  * Copyright (c) 2015 Stupeflix
  *
  * nope.media is free software; you can redistribute it and/or
@@ -22,6 +23,7 @@
 #include <libavutil/avassert.h>
 #include <libavutil/display.h>
 #include <libavutil/eval.h>
+#include <libavutil/opt.h>
 
 #include "mod_demuxing.h"
 #include "internal.h"
@@ -115,8 +117,24 @@ int nmdi_demuxing_init(void *log_ctx,
         av_assert0(0);
     }
 
+    AVDictionary *fmt_opts = NULL;
+    if (!strncmp(filename, "fd:", 3)) {
+        int fd;
+        int ret = sscanf(filename, "fd:%d", &fd);
+        if (ret != 1)
+            return AVERROR(EINVAL);
+
+        ret = av_dict_set_int(&fmt_opts, "fd", fd, 0);
+        if (ret < 0)
+            return ret;
+
+        filename = "fd:";
+    }
+
     TRACE(ctx, "opening %s", filename);
-    int ret = avformat_open_input(&ctx->fmt_ctx, filename, NULL, NULL);
+    int ret = avformat_open_input(&ctx->fmt_ctx, filename, NULL, &fmt_opts);
+    av_dict_free(&fmt_opts);
+
     if (ret < 0) {
         LOG(ctx, ERROR, "Unable to open input file '%s'", filename);
         return ret;
