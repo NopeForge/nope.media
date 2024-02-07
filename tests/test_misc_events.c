@@ -35,15 +35,15 @@ int main(int ac, char **av)
     nmd_start(s);
     nmd_stop(s);
     nmd_seek(s, 82.9);
-    f = nmd_get_frame(s, 83.5);
-    if (!f) {
+    int ret = nmd_get_frame(s, 83.5, &f);
+    if (ret != NMD_RET_NEWFRAME) {
         nmd_freep(&s);
         return -1;
     }
     nmd_frame_releasep(&f);
     nmd_stop(s);
-    f = nmd_get_frame(s, 83.5);
-    if (!f) {
+    ret = nmd_get_frame(s, 83.5, &f);
+    if (ret != NMD_RET_NEWFRAME) {
         nmd_freep(&s);
         return -1;
     }

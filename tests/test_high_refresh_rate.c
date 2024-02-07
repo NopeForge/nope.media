@@ -22,12 +22,12 @@ int main(int ac, char **av)
     if (!s)
         return -1;
 
-    f = nmd_get_frame(s, 0.);
-    if (!f)
+    int ret = nmd_get_frame(s, 0., &f);
+    if (ret != NMD_RET_NEWFRAME)
         return -1;
     nmd_frame_releasep(&f);
-    f = nmd_get_frame(s, t);
-    if (f && f->ts > t) {
+    ret = nmd_get_frame(s, t, &f);
+    if (ret == NMD_RET_NEWFRAME && f->ts > t) {
         fprintf(stderr, "unexpected frame at %f with ts=%f\n", t, f->ts);
         nmd_frame_releasep(&f);
         return -1;

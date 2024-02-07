@@ -18,17 +18,19 @@ int main(int ac, char **av)
     const int use_pkt_duration = ac > 1 ? atoi(av[1]) : 0;
 
     struct nmd_ctx *s = nmd_create(fake_filename);
-
     if (!s)
         return -1;
+
     nmd_set_option(s, "auto_hwaccel", 0);
     nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
     nmd_set_log_callback(s, (void*)fake_filename, log_callback);
-    struct nmd_frame *frame = nmd_get_frame(s, -1);
+
+    struct nmd_frame *frame = NULL;
+    nmd_get_frame(s, -1, &frame);
     nmd_frame_releasep(&frame);
-    frame = nmd_get_frame(s, 1.0);
+    nmd_get_frame(s, 1.0, &frame);
     nmd_frame_releasep(&frame);
-    frame = nmd_get_frame(s, 3.0);
+    nmd_get_frame(s, 3.0, &frame);
     nmd_frame_releasep(&frame);
     nmd_freep(&s);
     return 0;

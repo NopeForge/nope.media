@@ -67,6 +67,18 @@ struct nmd_ctx {
     const char *cur_func_name;
 };
 
+static int averror_to_nmd_err(int averror)
+{
+    if (averror >= 0)
+        return NMD_RET_SUCCESS;
+    else if (averror == AVERROR_EOF)
+        return NMD_ERR_EOF;
+    else if (averror == AVERROR(ENOMEM))
+        return NMD_ERR_MEMORY;
+    else
+        return NMD_ERR_GENERIC;
+}
+
 #define OFFSET(x) offsetof(struct nmd_ctx, opts.x)
 static const AVOption options[] = {
     { "avselect",               NULL, OFFSET(avselect),               AV_OPT_TYPE_INT,       {.i64=NMD_SELECT_VIDEO}, 0, NB_NMD_MEDIA_SELECTION-1 },
@@ -148,7 +160,7 @@ int nmd_set_option(struct nmd_ctx *s, const char *key, ...)
 
 end:
     va_end(ap);
-    return ret;
+    return averror_to_nmd_err(ret);
 }
 
 static void free_context(struct nmd_ctx *s)
@@ -465,7 +477,7 @@ static int get_nmd_col_trc(int avcol_trc)
 /* Return the frame only if different from previous one. We do not make a
  * simple pointer check because of the frame reference counting (and thus
  * pointer reuse, depending on many parameters)  */
-static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *avframe, int status)
+static int ret_frame(struct nmd_ctx *s, AVFrame *avframe, int status, struct nmd_frame **framep)
 {
     struct nmd_frame *frame = NULL;
     const struct nmdi_opts *o = &s->opts;
@@ -536,7 +548,17 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *avframe, int stat
 
 end:
     END_FUNC(MAX_SYNC_OP_TIME);
-    return frame;
+
+    *framep = frame;
+
+    if (frame)
+        return NMD_RET_NEWFRAME;
+    else if (status >= 0)
+        return NMD_RET_UNCHANGED;
+    else if (s->eof)
+        return NMD_ERR_EOF;
+
+    return averror_to_nmd_err(status);
 }
 
 void nmd_frame_releasep(struct nmd_frame **framep)
@@ -623,11 +645,11 @@ static int pop_frame(struct nmd_ctx *s, AVFrame **framep)
 #define SYNTH_FRAME 0
 
 #if SYNTH_FRAME
-static struct nmd_frame *ret_synth_frame(struct nmd_ctx *s, int64_t t64)
+static int ret_synth_frame(struct nmd_ctx *s, int64_t t64, struct nmd_frame **framep)
 {
     AVFrame *frame = av_frame_alloc();
     if (!frame)
-        return NULL;
+        return NMD_ERR_MEMORY;
     const int frame_id = lrint(t64 * 60 / 1000000);
 
     frame->format = AV_PIX_FMT_RGBA;
@@ -636,13 +658,13 @@ static struct nmd_frame *ret_synth_frame(struct nmd_ctx *s, int64_t t64)
     int ret = av_frame_get_buffer(frame, 16);
     if (ret < 0) {
         av_frame_free(&frame);
-        return NULL;
+        return averror_to_nmd_err(ret);
     }
     frame->data[0][0] = (frame_id>>8 & 0xf) * 17;
     frame->data[0][1] = (frame_id>>4 & 0xf) * 17;
     frame->data[0][2] = (frame_id    & 0xf) * 17;
     frame->data[0][3] = 0xff;
-    return ret_frame(s, frame, 0);
+    return ret_frame(s, frame, 0, framep);
 }
 #endif
 
@@ -655,12 +677,14 @@ int nmd_seek(struct nmd_ctx *s, double reqt)
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret;
+        goto end;
 
     const struct nmdi_opts *o = &s->opts;
     ret = nmdi_async_seek(s->actx, get_media_time(o, TIME2INT64(reqt)));
+
+end:
     END_FUNC(MAX_ASYNC_OP_TIME);
-    return ret;
+    return averror_to_nmd_err(ret);
 }
 
 int nmd_stop(struct nmd_ctx *s)
@@ -672,11 +696,13 @@ int nmd_stop(struct nmd_ctx *s)
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret;
+        goto end;
 
     ret = nmdi_async_stop(s->actx);
+
+end:
     END_FUNC(MAX_ASYNC_OP_TIME);
-    return ret;
+    return averror_to_nmd_err(ret);
 }
 
 int nmd_start(struct nmd_ctx *s)
@@ -685,11 +711,13 @@ int nmd_start(struct nmd_ctx *s)
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret;
+        goto end;
 
     ret = nmdi_async_start(s->actx);
+
+end:
     END_FUNC(MAX_ASYNC_OP_TIME);
-    return ret;
+    return averror_to_nmd_err(ret);
 }
 
 /*
@@ -701,7 +729,7 @@ static inline int64_t stream_time(const struct nmd_ctx *s, int64_t t)
     return av_rescale_q(t, AV_TIME_BASE_Q, s->st_timebase);
 }
 
-struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
+int nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64, struct nmd_frame **framep)
 {
     int64_t diff;
     const struct nmdi_opts *o = &s->opts;
@@ -709,16 +737,16 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
     START_FUNC_T("GET FRAME", t64 / 1000000.);
 
 #if SYNTH_FRAME
-    return ret_synth_frame(s, t64);
+    return ret_synth_frame(s, t64, framep);
 #endif
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret_frame(s, NULL, ret);
+        return ret_frame(s, NULL, ret, framep);
 
     if (t64 < 0) {
         nmd_start(s);
-        return ret_frame(s, NULL, 0);
+        return ret_frame(s, NULL, 0, framep);
     }
 
     const int64_t vt = get_media_time(o, t64);
@@ -727,13 +755,13 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
     if (s->last_ts != AV_NOPTS_VALUE && stream_time(s, vt) >= s->last_ts &&
         s->last_pushed_frame_ts == s->last_ts) {
         TRACE(s, "requested the last frame again");
-        return ret_frame(s, NULL, 0);
+        return ret_frame(s, NULL, 0, framep);
     }
 
     if (s->first_ts != AV_NOPTS_VALUE && stream_time(s, vt) <= s->first_ts &&
         s->last_pushed_frame_ts == s->first_ts) {
         TRACE(s, "requested the first frame again");
-        return ret_frame(s, NULL, 0);
+        return ret_frame(s, NULL, 0, framep);
     }
 
     AVFrame *candidate = NULL;
@@ -756,7 +784,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         int ret = pop_frame(s, &candidate);
         if (!candidate || ret < 0) {
             TRACE(s, "can not get a single frame for this media");
-            return ret_frame(s, NULL, ret);
+            return ret_frame(s, NULL, ret, framep);
         }
 
         /* At this point we can assume the stream timebase is known because
@@ -779,7 +807,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
              * candidate if the first time requested is not actually 0 */
             if (t64 == 0)
                 s->first_ts = candidate->pts;
-            return ret_frame(s, candidate, ret);
+            return ret_frame(s, candidate, ret, framep);
         }
 
     } else {
@@ -795,7 +823,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
     }
 
     if (!diff)
-        return ret_frame(s, candidate, 0);
+        return ret_frame(s, candidate, 0, framep);
 
     /* Check if a seek is needed */
     const int forward_seek = av_compare_ts(diff, s->st_timebase, o->dist_time_seek_trigger64, AV_TIME_BASE_Q) >= 0;
@@ -828,7 +856,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         ret = nmdi_async_seek(s->actx, vt);
         if (ret < 0) {
             av_frame_free(&candidate);
-            return ret_frame(s, NULL, ret);
+            return ret_frame(s, NULL, ret, framep);
         }
     }
 
@@ -857,7 +885,7 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
                 av_frame_free(&candidate);
                 av_frame_free(&s->cached_frame);
                 s->cached_frame = NULL;
-                return ret_frame(s, next, 0);
+                return ret_frame(s, next, 0, framep);
             }
         }
 
@@ -881,21 +909,21 @@ struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64)
         }
     }
 
-    return ret_frame(s, candidate, ret);
+    return ret_frame(s, candidate, ret, framep);
 }
 
-struct nmd_frame *nmd_get_frame(struct nmd_ctx *s, double t)
+int nmd_get_frame(struct nmd_ctx *s, double t, struct nmd_frame **framep)
 {
-    return nmd_get_frame_ms(s, TIME2INT64(t));
+    return nmd_get_frame_ms(s, TIME2INT64(t), framep);
 }
 
-struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s)
+int nmd_get_next_frame(struct nmd_ctx *s, struct nmd_frame **framep)
 {
     START_FUNC("GET NEXT FRAME");
 
     int ret = configure_context(s);
     if (ret < 0)
-        return ret_frame(s, NULL, ret);
+        return ret_frame(s, NULL, ret, framep);
 
     if (s->eof) {
         av_frame_free(&s->cached_frame);
@@ -910,9 +938,9 @@ struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s)
     AVFrame *frame = NULL;
     ret = pop_frame(s, &frame);
     if (!frame || ret < 0)
-        return ret_frame(s, NULL, ret);
+        return ret_frame(s, NULL, ret, framep);
 
-    return ret_frame(s, frame, ret);
+    return ret_frame(s, frame, ret, framep);
 }
 
 int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info)
@@ -931,7 +959,7 @@ int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info)
 
 end:
     END_FUNC(1.0);
-    return ret;
+    return averror_to_nmd_err(ret);
 }
 
 int nmd_get_duration(struct nmd_ctx *s, double *duration)
@@ -946,5 +974,5 @@ int nmd_get_duration(struct nmd_ctx *s, double *duration)
 
 end:
     END_FUNC(1.0);
-    return ret;
+    return averror_to_nmd_err(ret);
 }

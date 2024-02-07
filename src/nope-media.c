@@ -149,10 +149,10 @@ static void render(struct player *p)
         .h = p->viewport[3],
     };
 
-    struct nmd_frame *frame;
+    struct nmd_frame *frame = NULL;
     if (p->next_frame_requested) {
-        frame = nmd_get_next_frame(p->nmd_ctx);
-        if (frame) {
+        int ret = nmd_get_next_frame(p->nmd_ctx, &frame);
+        if (ret == NMD_RET_NEWFRAME) {
             printf("Stepped to frame t=%f\n", frame->ts);
             p->frame_ts = frame->ts * 1000000;
             p->frame_index = llrint((p->frame_ts * p->framerate[0]) / (double)(p->framerate[1] * 1000000));
@@ -161,7 +161,9 @@ static void render(struct player *p)
         p->next_frame_requested = 0;
     } else {
         update_time(p, -1);
-        frame = nmd_get_frame(p->nmd_ctx, p->frame_time);
+        int ret = nmd_get_frame(p->nmd_ctx, p->frame_time, &frame);
+        if (ret < 0)
+            return;
     }
 
     if (p->seeking) {

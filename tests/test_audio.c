@@ -27,9 +27,10 @@ int main(int ac, char **av)
     for (int r = 0; r < 2; r++) {
         printf("run #%d\n", r+1);
         for (;;) {
-            struct nmd_frame *frame = nmd_get_next_frame(s);
+            struct nmd_frame *frame;
 
-            if (!frame) {
+            int ret = nmd_get_next_frame(s, &frame);
+            if (ret != NMD_RET_NEWFRAME) {
                 printf("null frame\n");
                 break;
             }
