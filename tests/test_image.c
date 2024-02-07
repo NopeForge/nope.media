@@ -22,8 +22,8 @@ int main(int ac, char **av)
     nmd_set_option(s, "start_time", 3.0);
     nmd_set_option(s, "auto_hwaccel", 0);
     nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
-    f = nmd_get_frame(s, 53.0);
-    if (!f) {
+    int ret = nmd_get_frame(s, 53.0, &f);
+    if (ret != NMD_RET_NEWFRAME) {
         fprintf(stderr, "didn't get an image\n");
         return -1;
     }
@@ -37,8 +37,8 @@ int main(int ac, char **av)
         return -1;
     }
 
-    f = nmd_get_frame(s, 12.3);
-    if (f) {
+    ret = nmd_get_frame(s, 12.3, &f);
+    if (ret == NMD_RET_NEWFRAME) {
         nmd_frame_releasep(&f);
         fprintf(stderr, "we got a new frame even though the source is an image\n");
         return -1;

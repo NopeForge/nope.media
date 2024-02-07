@@ -100,8 +100,9 @@ static int check_frame(struct nmd_frame *f, double t, int opt_test_flags)
 static int action_start(struct nmd_ctx *s, int opt_test_flags)
 {
     int ret;
-    struct nmd_frame *frame = nmd_get_frame(s, 0);
+    struct nmd_frame *frame;
 
+    nmd_get_frame(s, 0, &frame);
     if ((ret = check_frame(frame, 0, opt_test_flags)) < 0)
         return ret;
     nmd_frame_releasep(&frame);
@@ -111,45 +112,46 @@ static int action_start(struct nmd_ctx *s, int opt_test_flags)
 static int action_middle(struct nmd_ctx *s, int opt_test_flags)
 {
     int ret;
-    struct nmd_frame *f0 = nmd_get_frame(s, 30.0);
-    struct nmd_frame *f1 = nmd_get_frame(s, 30.1);
-    struct nmd_frame *f2 = nmd_get_frame(s, 30.2);
-    struct nmd_frame *f3 = nmd_get_frame(s, 15.0);
-    struct nmd_frame *f4 = nmd_get_next_frame(s);
-    struct nmd_frame *f5 = nmd_get_next_frame(s);
+    struct nmd_frame *frames[6] = {0};
+    nmd_get_frame(s, 30.0, &frames[0]);
+    nmd_get_frame(s, 30.1, &frames[1]);
+    nmd_get_frame(s, 30.2, &frames[2]);
+    nmd_get_frame(s, 15.0, &frames[3]);
+    nmd_get_next_frame(s, &frames[4]);
+    nmd_get_next_frame(s, &frames[5]);
     const double increment = opt_test_flags & FLAG_AUDIO ? SOURCE_SPF/(float)SOURCE_FREQ
                                                          : 1./SOURCE_FPS;
 
-    if ((ret = check_frame(f0, 30.0,               opt_test_flags)) < 0 ||
-        (ret = check_frame(f1, 30.1,               opt_test_flags)) < 0 ||
-        (ret = check_frame(f2, 30.2,               opt_test_flags)) < 0 ||
-        (ret = check_frame(f3, 15.0,               opt_test_flags)) < 0 ||
-        (ret = check_frame(f4, 15.0 + 1*increment, opt_test_flags)) < 0 ||
-        (ret = check_frame(f5, 15.0 + 2*increment, opt_test_flags)) < 0)
+    if ((ret = check_frame(frames[0], 30.0,               opt_test_flags)) < 0 ||
+        (ret = check_frame(frames[1], 30.1,               opt_test_flags)) < 0 ||
+        (ret = check_frame(frames[2], 30.2,               opt_test_flags)) < 0 ||
+        (ret = check_frame(frames[3], 15.0,               opt_test_flags)) < 0 ||
+        (ret = check_frame(frames[4], 15.0 + 1*increment, opt_test_flags)) < 0 ||
+        (ret = check_frame(frames[5], 15.0 + 2*increment, opt_test_flags)) < 0)
         return ret;
 
-    nmd_frame_releasep(&f0);
-    nmd_frame_releasep(&f5);
-    nmd_frame_releasep(&f1);
-    nmd_frame_releasep(&f4);
-    nmd_frame_releasep(&f2);
-    nmd_frame_releasep(&f3);
+    nmd_frame_releasep(&frames[0]);
+    nmd_frame_releasep(&frames[5]);
+    nmd_frame_releasep(&frames[1]);
+    nmd_frame_releasep(&frames[4]);
+    nmd_frame_releasep(&frames[2]);
+    nmd_frame_releasep(&frames[3]);
 
-    f0 = nmd_get_next_frame(s);
-    f1 = nmd_get_frame(s, 16.0);
-    f2 = nmd_get_frame(s, 16.001);
+    nmd_get_next_frame(s, &frames[0]);
+    nmd_get_frame(s, 16.0, &frames[1]);
+    nmd_get_frame(s, 16.001, &frames[2]);
 
-    if ((ret = check_frame(f0, 15.0 + 3*increment, opt_test_flags)) < 0 ||
-        (ret = check_frame(f1, 16.0,               opt_test_flags)) < 0)
+    if ((ret = check_frame(frames[0], 15.0 + 3*increment, opt_test_flags)) < 0 ||
+        (ret = check_frame(frames[1], 16.0,               opt_test_flags)) < 0)
         return ret;
 
-    if (f2) {
+    if (frames[2]) {
         fprintf(stderr, "got f2\n");
         return -1;
     }
 
-    nmd_frame_releasep(&f1);
-    nmd_frame_releasep(&f0);
+    nmd_frame_releasep(&frames[1]);
+    nmd_frame_releasep(&frames[0]);
 
     return 0;
 }
@@ -158,13 +160,13 @@ static int action_end(struct nmd_ctx *s, int opt_test_flags)
 {
     struct nmd_frame *f;
 
-    f = nmd_get_frame(s, 999999.0);
-    if (!f)
+    int ret = nmd_get_frame(s, 999999.0, &f);
+    if (ret != NMD_RET_NEWFRAME)
         return -1;
     nmd_frame_releasep(&f);
 
-    f = nmd_get_frame(s, 99999.0);
-    if (f) {
+    ret = nmd_get_frame(s, 99999.0, &f);
+    if (ret == NMD_RET_NEWFRAME) {
         nmd_frame_releasep(&f);
         return -1;
     }

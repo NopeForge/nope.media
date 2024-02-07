@@ -13,7 +13,7 @@ int main(int ac, char **av)
     const char *filename = av[1];
     const int use_pkt_duration = ac > 2 ? atoi(av[2]) : 0;
 
-    int i = 0, ret = 0;
+    int i = 0;
     struct nmd_ctx *s = nmd_create(filename);
 
     if (!s)
@@ -25,9 +25,10 @@ int main(int ac, char **av)
     for (int r = 0; r < 2; r++) {
         printf("run #%d\n", r+1);
         for (;;) {
-            struct nmd_frame *frame = nmd_get_next_frame(s);
+            struct nmd_frame *frame;
 
-            if (!frame) {
+            int ret = nmd_get_next_frame(s, &frame);
+            if (ret != NMD_RET_NEWFRAME) {
                 printf("null frame\n");
                 break;
             }
@@ -43,8 +44,8 @@ int main(int ac, char **av)
 
     if (i != 8192) {
         fprintf(stderr, "decoded %d/8192 expected frames\n", i);
-        ret = -1;
+        return -1;
     }
 
-    return ret;
+    return 0;
 }

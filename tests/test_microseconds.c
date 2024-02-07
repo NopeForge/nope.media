@@ -25,9 +25,13 @@ int main(int ac, char **av)
     nmd_set_option(s1, "use_pkt_duration", use_pkt_duration);
     nmd_set_option(s2, "auto_hwaccel", 0);
     nmd_set_option(s2, "use_pkt_duration", use_pkt_duration);
-    f1 = nmd_get_frame(s1, 3.0);
-    f2 = nmd_get_frame_ms(s2, 3*1000000);
-    if (!f1 || !f2)
+
+    int ret = nmd_get_frame(s1, 3.0, &f1);
+    if (ret != NMD_RET_NEWFRAME)
+        return -1;
+
+    ret = nmd_get_frame_ms(s2, 3*1000000, &f2);
+    if (ret != NMD_RET_NEWFRAME)
         return -1;
 
     if (f1->ts != f2->ts) {

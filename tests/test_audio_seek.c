@@ -27,9 +27,8 @@ int main(int ac, char **av)
     nmd_set_option(s, "use_pkt_duration", use_pkt_duration);
 
     for (int i = 0; i < 10; i++) {
-        frame = nmd_get_next_frame(s);
-
-        if (!frame) {
+        int ret = nmd_get_next_frame(s, &frame);
+        if (ret != NMD_RET_NEWFRAME) {
             fprintf(stderr, "got unexpected null frame\n");
             nmd_freep(&s);
             return -1;
@@ -43,8 +42,8 @@ int main(int ac, char **av)
 
     nmd_seek(s, last_ts);
 
-    frame = nmd_get_next_frame(s);
-    if (!frame) {
+    ret = nmd_get_next_frame(s, &frame);
+    if (ret != NMD_RET_NEWFRAME) {
         fprintf(stderr, "expected frame->ts=%f got null frame\n", last_ts);
         ret = -1;
     } else if (frame->ts != last_ts) {

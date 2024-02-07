@@ -171,6 +171,17 @@ enum {
     NB_NMD_COL_TRC // *NOT* part of the API/ABI
 };
 
+enum {
+    NMD_ERR_MEMORY     = -3,              // a memory error occured, frame pointer is always NULL
+    NMD_ERR_EOF        = -2,              // reached end of file (or requested end time), frame pointer
+                                          // is always NULL
+    NMD_ERR_GENERIC    = -1,              // an error occured, frame pointer is always NULL
+    NMD_RET_SUCCESS    = 0,               // the requested operation succeeded
+    NMD_RET_NEWFRAME   = NMD_RET_SUCCESS, // a new frame is returned, frame pointer is not NULL
+    NMD_RET_UNCHANGED  = 1,               // the returned frame would be the same as the previous one,
+                                          // frame pointer is always NULL
+};
+
 struct nmd_frame {
     void *internal;     // nmd internal frame context frame, do not alter
     uint8_t *datap[8];  // pointer to the frame planes
@@ -278,8 +289,6 @@ NMDAPI int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info);
 /**
  * Get the frame at an absolute time.
  *
- * The returned frame can be NULL if unchanged from last call.
- *
  * The returned frame needs to be released using nmd_frame_releasep().
  *
  * Requesting a negative time is equivalent to calling nmd_prefetch().
@@ -290,13 +299,15 @@ NMDAPI int nmd_get_info(struct nmd_ctx *s, struct nmd_info *info);
  *
  * The function is blocking, it will make sure any asynchronous operation
  * previously requested (start, seek, stop) is honored before returning.
+ *
+ * Return: NMD_RET_* or NMD_ERR_*
  */
-NMDAPI struct nmd_frame *nmd_get_frame(struct nmd_ctx *s, double t);
+NMDAPI int nmd_get_frame(struct nmd_ctx *s, double t, struct nmd_frame **framep);
 
 /**
  * Same as nmd_get_frame, but with timestamp expressed in microseconds.
  */
-NMDAPI struct nmd_frame *nmd_get_frame_ms(struct nmd_ctx *s, int64_t ms);
+NMDAPI int nmd_get_frame_ms(struct nmd_ctx *s, int64_t ms, struct nmd_frame **framep);
 
 /**
  * Request a playback start to the player.
@@ -342,8 +353,10 @@ NMDAPI int nmd_seek(struct nmd_ctx *s, double t);
  * "refresh rate" or seeking needs, this is the function you are probably
  * interested in. You can still use this function in combination with
  * nmd_get_frame() in case you need seeking.
+ *
+ * Return: NMD_RET_NEW_FRAME or NMD_ERR_*
  */
-NMDAPI struct nmd_frame *nmd_get_next_frame(struct nmd_ctx *s);
+NMDAPI int nmd_get_next_frame(struct nmd_ctx *s, struct nmd_frame **framep);
 
 /**
  * Release a frame obtained with nmd_get_frame(), nmd_get_frame_ms() or
