@@ -465,19 +465,19 @@ static int get_nmd_col_trc(int avcol_trc)
 /* Return the frame only if different from previous one. We do not make a
  * simple pointer check because of the frame reference counting (and thus
  * pointer reuse, depending on many parameters)  */
-static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame, int status)
+static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *avframe, int status)
 {
     struct nmd_frame *ret = NULL;
     const struct nmdi_opts *o = &s->opts;
 
-    s->eof = !frame && (status == AVERROR_EOF || status == AVERROR_EXIT);
+    s->eof = !avframe && (status == AVERROR_EOF || status == AVERROR_EXIT);
 
-    if (!frame) {
+    if (!avframe) {
         LOG(s, DEBUG, "no frame to return");
         goto end;
     }
 
-    const int64_t frame_ts = frame->pts;
+    const int64_t frame_ts = avframe->pts;
 
     TRACE(s, "last_pushed_frame_ts:%s (%"PRId64") frame_ts:%s (%"PRId64")",
           av_ts2timestr(s->last_pushed_frame_ts, &s->st_timebase),
@@ -488,50 +488,50 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *frame, int status
     /* if same frame as previously, do not raise it again */
     if (s->last_pushed_frame_ts == frame_ts) {
         LOG(s, DEBUG, "same frame as previously, return NULL");
-        av_frame_free(&frame);
+        av_frame_free(&avframe);
         goto end;
     }
 
     ret = av_mallocz(sizeof(*ret));
     if (!ret) {
-        av_frame_free(&frame);
+        av_frame_free(&avframe);
         goto end;
     }
 
     s->last_pushed_frame_ts = frame_ts;
 
-    ret->internal = frame;
-    memcpy(ret->datap, frame->data, sizeof(ret->datap));
-    memcpy(ret->linesizep, frame->linesize, sizeof(ret->linesizep));
+    ret->internal = avframe;
+    memcpy(ret->datap, avframe->data, sizeof(ret->datap));
+    memcpy(ret->linesizep, avframe->linesize, sizeof(ret->linesizep));
     ret->pts      = frame_ts;
     ret->ms       = av_rescale_q(frame_ts, AV_TIME_BASE_Q, s->st_timebase);
     ret->ts       = frame_ts * av_q2d(s->st_timebase);
-    ret->color_space     = get_nmd_col_spc(frame->colorspace);
-    ret->color_range     = get_nmd_col_rng(frame->color_range);
-    ret->color_primaries = get_nmd_col_pri(frame->color_primaries);
-    ret->color_trc       = get_nmd_col_trc(frame->color_trc);
+    ret->color_space     = get_nmd_col_spc(avframe->colorspace);
+    ret->color_range     = get_nmd_col_rng(avframe->color_range);
+    ret->color_primaries = get_nmd_col_pri(avframe->color_primaries);
+    ret->color_trc       = get_nmd_col_trc(avframe->color_trc);
     if (o->avselect == NMD_SELECT_VIDEO) {
-        if (frame->format == AV_PIX_FMT_VIDEOTOOLBOX ||
-            frame->format == AV_PIX_FMT_VAAPI        ||
-            frame->format == AV_PIX_FMT_MEDIACODEC) {
-            ret->datap[0] = frame->data[3];
+        if (avframe->format == AV_PIX_FMT_VIDEOTOOLBOX ||
+            avframe->format == AV_PIX_FMT_VAAPI        ||
+            avframe->format == AV_PIX_FMT_MEDIACODEC) {
+            ret->datap[0] = avframe->data[3];
         }
-        ret->width   = frame->width;
-        ret->height  = frame->height;
-        ret->pix_fmt = nmdi_pix_fmts_ff2nmd(frame->format);
+        ret->width   = avframe->width;
+        ret->height  = avframe->height;
+        ret->pix_fmt = nmdi_pix_fmts_ff2nmd(avframe->format);
         LOG(s, DEBUG, "return %dx%d video frame @ ts=%s",
-            frame->width, frame->height, av_ts2timestr(frame_ts, &s->st_timebase));
+            avframe->width, avframe->height, av_ts2timestr(frame_ts, &s->st_timebase));
     } else if (o->avselect == NMD_SELECT_AUDIO && o->audio_texture) {
-        ret->width   = frame->width;
-        ret->height  = frame->height;
+        ret->width   = avframe->width;
+        ret->height  = avframe->height;
         ret->pix_fmt = NMD_SMPFMT_FLT;
         LOG(s, DEBUG, "return %dx%d audio tex frame @ ts=%s",
-            frame->width, frame->height, av_ts2timestr(frame_ts, &s->st_timebase));
+            avframe->width, avframe->height, av_ts2timestr(frame_ts, &s->st_timebase));
     } else {
-        ret->nb_samples = frame->nb_samples;
-        ret->pix_fmt = nmdi_smp_fmts_ff2nmd(frame->format);
+        ret->nb_samples = avframe->nb_samples;
+        ret->pix_fmt = nmdi_smp_fmts_ff2nmd(avframe->format);
         LOG(s, DEBUG, "return %d samples audio frame @ ts=%s",
-            frame->nb_samples, av_ts2timestr(frame_ts, &s->st_timebase));
+            avframe->nb_samples, av_ts2timestr(frame_ts, &s->st_timebase));
     }
 
 end:
