@@ -626,17 +626,23 @@ static int pop_frame(struct nmd_ctx *s, AVFrame **framep)
 static struct nmd_frame *ret_synth_frame(struct nmd_ctx *s, int64_t t64)
 {
     AVFrame *frame = av_frame_alloc();
+    if (!frame)
+        return NULL;
     const int frame_id = lrint(t64 * 60 / 1000000);
 
     frame->format = AV_PIX_FMT_RGBA;
     frame->width = frame->height = 1;
     frame->pts = t64;
-    av_frame_get_buffer(frame, 16);
+    int ret = av_frame_get_buffer(frame, 16);
+    if (ret < 0) {
+        av_frame_free(&frame);
+        return NULL;
+    }
     frame->data[0][0] = (frame_id>>8 & 0xf) * 17;
     frame->data[0][1] = (frame_id>>4 & 0xf) * 17;
     frame->data[0][2] = (frame_id    & 0xf) * 17;
     frame->data[0][3] = 0xff;
-    return ret_frame(s, frame);
+    return ret_frame(s, frame, 0);
 }
 #endif
 
