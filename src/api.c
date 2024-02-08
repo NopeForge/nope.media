@@ -467,7 +467,7 @@ static int get_nmd_col_trc(int avcol_trc)
  * pointer reuse, depending on many parameters)  */
 static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *avframe, int status)
 {
-    struct nmd_frame *ret = NULL;
+    struct nmd_frame *frame = NULL;
     const struct nmdi_opts *o = &s->opts;
 
     s->eof = !avframe && (status == AVERROR_EOF || status == AVERROR_EXIT);
@@ -492,51 +492,51 @@ static struct nmd_frame *ret_frame(struct nmd_ctx *s, AVFrame *avframe, int stat
         goto end;
     }
 
-    ret = av_mallocz(sizeof(*ret));
-    if (!ret) {
+    frame = av_mallocz(sizeof(*frame));
+    if (!frame) {
         av_frame_free(&avframe);
         goto end;
     }
 
     s->last_pushed_frame_ts = frame_ts;
 
-    ret->internal = avframe;
-    memcpy(ret->datap, avframe->data, sizeof(ret->datap));
-    memcpy(ret->linesizep, avframe->linesize, sizeof(ret->linesizep));
-    ret->pts      = frame_ts;
-    ret->ms       = av_rescale_q(frame_ts, AV_TIME_BASE_Q, s->st_timebase);
-    ret->ts       = frame_ts * av_q2d(s->st_timebase);
-    ret->color_space     = get_nmd_col_spc(avframe->colorspace);
-    ret->color_range     = get_nmd_col_rng(avframe->color_range);
-    ret->color_primaries = get_nmd_col_pri(avframe->color_primaries);
-    ret->color_trc       = get_nmd_col_trc(avframe->color_trc);
+    frame->internal = avframe;
+    memcpy(frame->datap, avframe->data, sizeof(frame->datap));
+    memcpy(frame->linesizep, avframe->linesize, sizeof(frame->linesizep));
+    frame->pts      = frame_ts;
+    frame->ms       = av_rescale_q(frame_ts, AV_TIME_BASE_Q, s->st_timebase);
+    frame->ts       = frame_ts * av_q2d(s->st_timebase);
+    frame->color_space     = get_nmd_col_spc(avframe->colorspace);
+    frame->color_range     = get_nmd_col_rng(avframe->color_range);
+    frame->color_primaries = get_nmd_col_pri(avframe->color_primaries);
+    frame->color_trc       = get_nmd_col_trc(avframe->color_trc);
     if (o->avselect == NMD_SELECT_VIDEO) {
         if (avframe->format == AV_PIX_FMT_VIDEOTOOLBOX ||
             avframe->format == AV_PIX_FMT_VAAPI        ||
             avframe->format == AV_PIX_FMT_MEDIACODEC) {
-            ret->datap[0] = avframe->data[3];
+            frame->datap[0] = avframe->data[3];
         }
-        ret->width   = avframe->width;
-        ret->height  = avframe->height;
-        ret->pix_fmt = nmdi_pix_fmts_ff2nmd(avframe->format);
+        frame->width   = avframe->width;
+        frame->height  = avframe->height;
+        frame->pix_fmt = nmdi_pix_fmts_ff2nmd(avframe->format);
         LOG(s, DEBUG, "return %dx%d video frame @ ts=%s",
             avframe->width, avframe->height, av_ts2timestr(frame_ts, &s->st_timebase));
     } else if (o->avselect == NMD_SELECT_AUDIO && o->audio_texture) {
-        ret->width   = avframe->width;
-        ret->height  = avframe->height;
-        ret->pix_fmt = NMD_SMPFMT_FLT;
+        frame->width   = avframe->width;
+        frame->height  = avframe->height;
+        frame->pix_fmt = NMD_SMPFMT_FLT;
         LOG(s, DEBUG, "return %dx%d audio tex frame @ ts=%s",
             avframe->width, avframe->height, av_ts2timestr(frame_ts, &s->st_timebase));
     } else {
-        ret->nb_samples = avframe->nb_samples;
-        ret->pix_fmt = nmdi_smp_fmts_ff2nmd(avframe->format);
+        frame->nb_samples = avframe->nb_samples;
+        frame->pix_fmt = nmdi_smp_fmts_ff2nmd(avframe->format);
         LOG(s, DEBUG, "return %d samples audio frame @ ts=%s",
             avframe->nb_samples, av_ts2timestr(frame_ts, &s->st_timebase));
     }
 
 end:
     END_FUNC(MAX_SYNC_OP_TIME);
-    return ret;
+    return frame;
 }
 
 void nmd_frame_releasep(struct nmd_frame **framep)
