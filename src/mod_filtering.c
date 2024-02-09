@@ -379,8 +379,8 @@ int nmdi_filtering_init(void *log_ctx,
             return AVERROR(ENOMEM);
         }
 
-        ctx->rdft_data[0] = av_calloc(AUDIO_NBSAMPLES, sizeof(*ctx->rdft_data[0]));
-        ctx->rdft_data[1] = av_calloc(AUDIO_NBSAMPLES, sizeof(*ctx->rdft_data[1]));
+        ctx->rdft_data[0] = av_calloc(AUDIO_NBSAMPLES + 2, sizeof(*ctx->rdft_data[0]));
+        ctx->rdft_data[1] = av_calloc(AUDIO_NBSAMPLES + 2, sizeof(*ctx->rdft_data[1]));
         if (!ctx->rdft_data[0] || !ctx->rdft_data[1])
             return AVERROR(ENOMEM);
     }
