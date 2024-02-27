@@ -1,7 +1,7 @@
 project(
   'nope.media',
   'c',
-  default_options: ['c_std=c99'],
+  default_options: ['c_std=c17'],
   license: 'LGPL-2.1',
   meson_version: '>= 0.57.0',
   version: files('VERSION'),
