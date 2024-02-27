@@ -49,6 +49,6 @@ void nmdi_update_dimensions(int *width, int *height, int max_pixels);
 #define TIME2INT64(d) llrint((d) * av_q2d(av_inv_q(AV_TIME_BASE_Q)))
 #define PTS2TIMESTR(t64) av_ts2timestr(t64, &AV_TIME_BASE_Q)
 
-#define NMDI_STATIC_ASSERT(id, c) typedef char nmdi_checking_##id[(c) ? 1 : -1]
+#define NMDI_STATIC_ASSERT(id, c) _Static_assert(c, #id)
 
 #endif
