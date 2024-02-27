@@ -71,7 +71,13 @@ double nmdi_demuxing_probe_rotation(const struct demuxing_ctx *ctx)
 {
     AVStream *st = (AVStream *)ctx->stream; // XXX: Fix FFmpeg.
     AVDictionaryEntry *rotate_tag = av_dict_get(st->metadata, "rotate", NULL, 0);
+#if LIBAVCODEC_VERSION_INT >= AV_VERSION_INT(60, 29, 100)
+    const AVCodecParameters *par = st->codecpar;
+    const AVPacketSideData *side_data = av_packet_side_data_get(par->coded_side_data, par->nb_coded_side_data, AV_PKT_DATA_DISPLAYMATRIX);
+    const uint8_t *displaymatrix = side_data ? side_data->data : NULL;
+#else
     const uint8_t *displaymatrix = av_stream_get_side_data(st, AV_PKT_DATA_DISPLAYMATRIX, NULL);
+#endif
     double theta = 0;
 
     if (rotate_tag && *rotate_tag->value && strcmp(rotate_tag->value, "0")) {
