@@ -52,7 +52,7 @@ static int64_t clipi64(int64_t v, int64_t min, int64_t max)
 
 static int64_t gettime_relative(void)
 {
-    return SDL_GetTicks() * 1000;
+    return SDL_GetTicks64() * 1000;
 }
 
 static void set_frame_ts(struct player *p, int64_t frame_ts)
