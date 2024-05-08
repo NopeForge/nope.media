@@ -95,7 +95,14 @@ int main(int ac, char **av)
                     goto done;
                 }
             } else if (k == 3) {
-                frame = NULL;
+                ret = nmd_get_next_frame(s, &frame);
+                if (ret != NMD_ERR_EOF) {
+                    if (ret == NMD_RET_NEWFRAME)
+                        nmd_frame_releasep(&frame);
+                    fprintf(stderr, "expected to be at EOF\n");
+                    ret = -1;
+                    goto done;
+                }
             }
             nmd_frame_releasep(&frame);
             nmd_freep(&s);
