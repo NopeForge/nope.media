@@ -62,7 +62,7 @@ int main(int ac, char **av)
             nmd_set_option(s, "end_time", end_time);
 
             for (int i = 0; i < nb_frames; i++) {
-                int ret = nmd_get_next_frame(s, &frame);
+                ret = nmd_get_next_frame(s, &frame);
                 if (ret != NMD_RET_NEWFRAME) {
                     fprintf(stderr, "unexpected null frame before EOS\n");
                     ret = -1;
@@ -73,21 +73,21 @@ int main(int ac, char **av)
 
             if (k == 0) {
                 nmd_seek(s, ts[j]);
-                int ret = nmd_get_next_frame(s, &frame);
+                ret = nmd_get_next_frame(s, &frame);
                 if (ret != NMD_RET_NEWFRAME) {
                     fprintf(stderr, "unexpected null frame from nmd_get_next_frame() after seeking at %f\n", ts[j]);
                     ret = -1;
                     goto done;
                 }
             } else if (k == 1) {
-                int ret = nmd_get_frame(s, ts[j], &frame);
+                ret = nmd_get_frame(s, ts[j], &frame);
                 if (ret != NMD_RET_NEWFRAME) {
                     fprintf(stderr, "unexpected null frame from nmd_get_frame() after seeking at %f\n", ts[j]);
                     ret = -1;
                     goto done;
                 }
             } else if (k == 2) {
-                int ret = nmd_get_frame(s, 1000.0, &frame);
+                ret = nmd_get_frame(s, 1000.0, &frame);
                 if (ret == NMD_RET_NEWFRAME) {
                     fprintf(stderr, "unexpected frame at %f with ts=%f\n", 1000.0f, frame->ts);
                     ret = -1;
@@ -101,6 +101,8 @@ int main(int ac, char **av)
             nmd_freep(&s);
         }
     }
+
+    ret = 0;
 
 done:
     nmd_freep(&s);
