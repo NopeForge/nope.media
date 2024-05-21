@@ -24,6 +24,7 @@
 #include <libavfilter/buffersrc.h>
 #include <libavformat/avformat.h>
 #include <libavutil/avstring.h>
+#include <libavutil/channel_layout.h>
 #include <libavutil/frame.h>
 #include <libavutil/opt.h>
 #include <libavutil/pixdesc.h>
@@ -40,6 +41,23 @@
 #define AUDIO_NBSAMPLES  (1<<(AUDIO_NBITS))
 #define AUDIO_NBCHANNELS 2
 
+struct frame_info {
+    int format;
+    int width;
+    int height;
+    AVChannelLayout channel_layout;
+    int sample_rate;
+};
+
+static void reset_frame_info(struct frame_info *frame_info)
+{
+    frame_info->format = AV_PIX_FMT_NONE;
+    frame_info->width = 0;
+    frame_info->height = 0;
+    frame_info->sample_rate = 0;
+    av_channel_layout_uninit(&frame_info->channel_layout);
+}
+
 struct filtering_ctx {
     void *log_ctx;
 
@@ -55,7 +73,8 @@ struct filtering_ctx {
     AVRational st_timebase;
 
     AVFilterGraph *filter_graph;
-    enum AVPixelFormat last_frame_format;
+    struct frame_info frame_info;
+
     AVFilterContext *buffersink_ctx;        // sink of the graph (from where we pull)
     AVFilterContext *buffersrc_ctx;         // source of the graph (where we push)
     float *window_func_lut;                 // audio window function lookup table
@@ -193,7 +212,7 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
     char args[512];
     const AVFilter *buffersrc, *buffersink;
     AVFilterInOut *outputs, *inputs;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->last_frame_format);
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->frame_info.format);
     const AVCodecParameters *codecpar = ctx->codecpar;
     const AVRational time_base = ctx->st_timebase;
 
@@ -228,13 +247,13 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
     if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         snprintf(args, sizeof(args),
                  "video_size=%dx%d:pix_fmt=%s:time_base=%d/%d:pixel_aspect=%d/%d",
-                 codecpar->width, codecpar->height, av_get_pix_fmt_name(ctx->last_frame_format),
+                 ctx->frame_info.width, ctx->frame_info.height, av_get_pix_fmt_name(ctx->frame_info.format),
                  time_base.num, time_base.den,
                  codecpar->sample_aspect_ratio.num, codecpar->sample_aspect_ratio.den);
     } else {
         snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
-                 time_base.num, time_base.den, codecpar->sample_rate,
-                 av_get_sample_fmt_name(codecpar->format));
+                 time_base.num, time_base.den, ctx->frame_info.sample_rate,
+                 av_get_sample_fmt_name(ctx->frame_info.format));
 #if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(57, 24, 100)
         if (codecpar->channel_layout)
             av_strlcatf(args, sizeof(args), ":channel_layout=0x%"PRIx64, codecpar->channel_layout);
@@ -242,7 +261,7 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
             av_strlcatf(args, sizeof(args), ":channels=%d", codecpar->channels);
 #else
         char chl[32] = {0};
-        av_channel_layout_describe(&codecpar->ch_layout, chl, sizeof(chl));
+        av_channel_layout_describe(&ctx->frame_info.channel_layout, chl, sizeof(chl));
         av_strlcatf(args, sizeof(args), ":channel_layout=%s", chl);
 #endif
     }
@@ -269,19 +288,19 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
     /* define the output of the graph */
     snprintf(args, sizeof(args), "sws_flags=+full_chroma_int;%s", ctx->filters ? ctx->filters : "");
     if (codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->last_frame_format);
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(ctx->frame_info.format);
         enum AVPixelFormat sw_pix_fmt = nmdi_pix_fmts_nmd2ff(ctx->sw_pix_fmt);
         if (ctx->sw_pix_fmt == NMD_PIXFMT_AUTO) {
-            const enum nmd_pixel_format fmt = nmdi_pix_fmts_ff2nmd(ctx->last_frame_format);
+            const enum nmd_pixel_format fmt = nmdi_pix_fmts_ff2nmd(ctx->frame_info.format);
             if (fmt == -1) {
                 LOG(ctx, DEBUG, "Unsupported software pixel format: %s, falling back to rgba",
-                    av_get_pix_fmt_name(ctx->last_frame_format));
+                    av_get_pix_fmt_name(ctx->frame_info.format));
                 sw_pix_fmt = AV_PIX_FMT_RGBA;
             } else {
-                sw_pix_fmt = ctx->last_frame_format;
+                sw_pix_fmt = ctx->frame_info.format;
             }
         }
-        const enum AVPixelFormat pix_fmt = !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL) ? sw_pix_fmt : ctx->last_frame_format;
+        const enum AVPixelFormat pix_fmt = !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL) ? sw_pix_fmt : ctx->frame_info.format;
 
         if (ctx->max_pixels) {
             int w = codecpar->width, h = codecpar->height;
@@ -556,7 +575,7 @@ void nmdi_filtering_run(struct filtering_ctx *ctx)
     TRACE(ctx, "filtering packets from %p into %p", ctx->in_queue, ctx->out_queue);
 
     // we want to force the reconstruction of the filtergraph
-    ctx->last_frame_format = AV_PIX_FMT_NONE;
+    reset_frame_info(&ctx->frame_info);
 
     for (;;) {
         AVFrame *frame;
@@ -573,7 +592,7 @@ void nmdi_filtering_run(struct filtering_ctx *ctx)
         if (msg.type == MSG_SEEK) {
             TRACE(ctx, "message is a seek, destroy filtergraph and forward message to out queue");
             avfilter_graph_free(&ctx->filter_graph);
-            ctx->last_frame_format = AV_PIX_FMT_NONE;
+            reset_frame_info(&ctx->frame_info);
             av_thread_message_flush(ctx->out_queue);
             ret = av_thread_message_queue_send(ctx->out_queue, &msg, 0);
             if (ret < 0) {
@@ -591,10 +610,19 @@ void nmdi_filtering_run(struct filtering_ctx *ctx)
                                                               : av_get_sample_fmt_name(frame->format),
               av_ts2timestr(frame->pts, &ctx->st_timebase));
 
-        /* lazy filtergraph configuration */
-        // XXX: check width/height/samplerate/etc changes?
-        if (ctx->last_frame_format != frame->format) {
-            ctx->last_frame_format = frame->format;
+        /* lazy filtergraph configuration, see AVBufferSrcParameters for exhaustive list of frame properties */
+        struct frame_info *frame_info = &ctx->frame_info;
+        if (frame_info->format != frame->format ||
+            frame_info->width != frame->width ||
+            frame_info->height != frame->height ||
+            frame_info->sample_rate != frame->sample_rate ||
+            av_channel_layout_compare(&frame_info->channel_layout, &frame->ch_layout)) {
+            frame_info->format = frame->format;
+            frame_info->width = frame->width;
+            frame_info->height = frame->height;
+            frame_info->sample_rate = frame->sample_rate;
+            av_channel_layout_copy(&frame_info->channel_layout, &frame->ch_layout);
+
             ret = setup_filtergraph(ctx);
             if (ret < 0)
                 break;
@@ -673,5 +701,6 @@ void nmdi_filtering_free(struct filtering_ctx **fp)
     avfilter_graph_free(&ctx->filter_graph);
     avcodec_parameters_free(&ctx->codecpar);
     av_freep(&ctx->filters);
+    reset_frame_info(&ctx->frame_info);
     av_freep(fp);
 }
