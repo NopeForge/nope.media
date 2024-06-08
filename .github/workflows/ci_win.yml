@@ -66,8 +66,8 @@ jobs:
 
     runs-on: windows-latest
     env:
-      FFMPEG_SRC: ffmpeg-n6.0-11-g3980415627-win64-lgpl-shared-6.0
-      FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2023-03-31-12-50
+      FFMPEG_SRC: ffmpeg-n7.0-21-gfb8f0ea7b3-win64-gpl-shared-7.0
+      FFMPEG_URL: https://github.com/BtbN/FFmpeg-Builds/releases/download/autobuild-2024-04-30-12-51
       PKGCONF_SRC: pkgconf-1.9.4
       PKGCONF_URL: https://distfiles.dereferenced.org/pkgconf
 
