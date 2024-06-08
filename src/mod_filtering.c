@@ -139,13 +139,9 @@ static void audio_frame_to_sound_texture(struct filtering_ctx *ctx, AVFrame *dst
         /* Run transform.
          *
          * After avtx_func(), the bins are an array of successive real and
-         * imaginary floats of size NB_SAMPLES/2 + 1. To mimic the
-         * av_rdft_calc() behavior, we simply copy the real part of the higher
-         * frequency into the imaginary part of the first bin. It also requires
-         * the bins allocation to be at least of size (nb_samples + 2) * sizeof(float).
+         * imaginary floats of size NB_SAMPLES/2 + 1.
          */
         ctx->avtx_func(ctx->avtx, bins, bins, sizeof(float));
-        bins[1] = bins[nb_samples];
 
         /* Get magnitude of frequency bins and copy result into texture
          *
@@ -153,8 +149,7 @@ static void audio_frame_to_sound_texture(struct filtering_ctx *ctx, AVFrame *dst
          * the last complex (highest frequency one).
          */
 #define MAGNITUDE(re, im) (hypotf(re, im) * scale)
-        fft_dst[0] = MAGNITUDE(bins[0], 0); // lowest frequency
-        for (int i = 1; i < width; i++)
+        for (int i = 0; i < width; i++)
             fft_dst[i] = MAGNITUDE(bins[2*i], bins[2*i + 1]);
     }
 
