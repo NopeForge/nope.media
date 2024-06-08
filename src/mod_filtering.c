@@ -80,7 +80,7 @@ struct filtering_ctx {
     float *window_func_lut;                 // audio window function lookup table
     AVTXContext *avtx;
     av_tx_fn avtx_func;
-    FFTSample *rdft_data[AUDIO_NBCHANNELS]; // real discrete fourier transform data for each channel
+    float *rdft_data[AUDIO_NBCHANNELS];     // real discrete fourier transform data for each channel
 };
 
 struct filtering_ctx *nmdi_filtering_alloc(void)
