@@ -879,11 +879,7 @@ int nmd_get_frame_ms(struct nmd_ctx *s, int64_t t64, struct nmd_frame **framep)
          * possible. */
         const int64_t rescaled_vt = stream_time(s, vt);
 
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 30, 100)
         const int64_t next_duration = next->duration;
-#else
-        const int64_t next_duration = next->pkt_duration;
-#endif
 
         if (s->opts.use_pkt_duration && next_duration > 0 && rescaled_vt >= next->pts) {
             const int64_t next_guessed_pts = next->pts + next_duration;

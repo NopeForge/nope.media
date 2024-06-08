@@ -78,12 +78,8 @@ struct filtering_ctx {
     AVFilterContext *buffersink_ctx;        // sink of the graph (from where we pull)
     AVFilterContext *buffersrc_ctx;         // source of the graph (where we push)
     float *window_func_lut;                 // audio window function lookup table
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 19, 100)
     AVTXContext *avtx;
     av_tx_fn avtx_func;
-#else
-    RDFTContext *rdft;                      // real discrete fourier transform context
-#endif
     FFTSample *rdft_data[AUDIO_NBCHANNELS]; // real discrete fourier transform data for each channel
 };
 
@@ -142,27 +138,14 @@ static void audio_frame_to_sound_texture(struct filtering_ctx *ctx, AVFrame *dst
 
         /* Run transform.
          *
-         * After av_rdft_calc(), the bins is an array of successive real and
-         * imaginary floats, except for the first two bins which are
-         * respectively the real corresponding to the lower frequency and the
-         * real for the higher frequency.
-         *
-         * The imaginary parts for these two frequencies are always 0 so they
-         * are assumed as such. This trick allowed an in-place processing for
-         * the N samples into N+1 complex.
-         *
          * After avtx_func(), the bins are an array of successive real and
          * imaginary floats of size NB_SAMPLES/2 + 1. To mimic the
          * av_rdft_calc() behavior, we simply copy the real part of the higher
          * frequency into the imaginary part of the first bin. It also requires
          * the bins allocation to be at least of size (nb_samples + 2) * sizeof(float).
          */
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 19, 100)
         ctx->avtx_func(ctx->avtx, bins, bins, sizeof(float));
         bins[1] = bins[nb_samples];
-#else
-        av_rdft_calc(ctx->rdft, bins);
-#endif
 
         /* Get magnitude of frequency bins and copy result into texture
          *
@@ -254,16 +237,9 @@ static int setup_filtergraph(struct filtering_ctx *ctx)
         snprintf(args, sizeof(args), "time_base=%d/%d:sample_rate=%d:sample_fmt=%s",
                  time_base.num, time_base.den, ctx->frame_info.sample_rate,
                  av_get_sample_fmt_name(ctx->frame_info.format));
-#if LIBAVUTIL_VERSION_INT < AV_VERSION_INT(57, 24, 100)
-        if (codecpar->channel_layout)
-            av_strlcatf(args, sizeof(args), ":channel_layout=0x%"PRIx64, codecpar->channel_layout);
-        else
-            av_strlcatf(args, sizeof(args), ":channels=%d", codecpar->channels);
-#else
         char chl[32] = {0};
         av_channel_layout_describe(&ctx->frame_info.channel_layout, chl, sizeof(chl));
         av_strlcatf(args, sizeof(args), ":channel_layout=%s", chl);
-#endif
     }
 
     TRACE(ctx, "graph buffer source args: %s", args);
@@ -409,20 +385,12 @@ int nmdi_filtering_init(void *log_ctx,
             ctx->window_func_lut[i] = .5f * (1 - cos(2*M_PI*i / (AUDIO_NBSAMPLES-1)));
 
         /* Real Discrete Fourier Transform context (Real to Complex) */
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 19, 100)
         const float scale = 1.f;
         ret = av_tx_init(&ctx->avtx, &ctx->avtx_func, AV_TX_FLOAT_RDFT, 0, AUDIO_NBSAMPLES, &scale, AV_TX_INPLACE);
         if (ret < 0) {
             LOG(ctx, ERROR, "Unable to init AVTX context with N=%d", AUDIO_NBITS);
             return ret;
         }
-#else
-        ctx->rdft = av_rdft_init(AUDIO_NBITS, DFT_R2C);
-        if (!ctx->rdft) {
-            LOG(ctx, ERROR, "Unable to init RDFT context with N=%d", AUDIO_NBITS);
-            return AVERROR(ENOMEM);
-        }
-#endif
 
         ctx->rdft_data[0] = av_calloc(AUDIO_NBSAMPLES + 2, sizeof(*ctx->rdft_data[0]));
         ctx->rdft_data[1] = av_calloc(AUDIO_NBSAMPLES + 2, sizeof(*ctx->rdft_data[1]));
@@ -687,16 +655,9 @@ void nmdi_filtering_free(struct filtering_ctx **fp)
         av_freep(&ctx->window_func_lut);
         av_freep(&ctx->rdft_data[0]);
         av_freep(&ctx->rdft_data[1]);
-#if LIBAVUTIL_VERSION_INT >= AV_VERSION_INT(57, 19, 100)
         if (ctx->avtx) {
             av_tx_uninit(&ctx->avtx);
         }
-#else
-        if (ctx->rdft) {
-            av_rdft_end(ctx->rdft);
-            ctx->rdft = NULL;
-        }
-#endif
     }
     avfilter_graph_free(&ctx->filter_graph);
     avcodec_parameters_free(&ctx->codecpar);
