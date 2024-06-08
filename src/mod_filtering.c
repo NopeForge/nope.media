@@ -655,9 +655,7 @@ void nmdi_filtering_free(struct filtering_ctx **fp)
         av_freep(&ctx->window_func_lut);
         av_freep(&ctx->rdft_data[0]);
         av_freep(&ctx->rdft_data[1]);
-        if (ctx->avtx) {
-            av_tx_uninit(&ctx->avtx);
-        }
+        av_tx_uninit(&ctx->avtx);
     }
     avfilter_graph_free(&ctx->filter_graph);
     avcodec_parameters_free(&ctx->codecpar);
