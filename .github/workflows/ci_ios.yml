@@ -77,7 +77,7 @@ jobs:
 
     - name: Upload Logs
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: ios-shared-logs
+        name: ios-shared-logs-${{ matrix.arch }}
         path: builddir/meson-logs
