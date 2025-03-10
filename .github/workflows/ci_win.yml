@@ -32,15 +32,13 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64 # Start a 64 bit Mingw environment
+          msystem: ucrt64
           update: true
 
       - name: Install dependencies
         run: |
           pacman -S --noconfirm --needed git
-          pacman -S --noconfirm --needed mingw-w64-x86_64-{toolchain,ffmpeg}
-          pacman -S --noconfirm mingw-w64-x86_64-python3-pip
-          pacman -S --noconfirm --needed mingw-w64-x86_64-meson
+          pacman -S --noconfirm --needed mingw-w64-ucrt-x86_64-{toolchain,ffmpeg,meson}
 
       - name: Setup
         run: |
