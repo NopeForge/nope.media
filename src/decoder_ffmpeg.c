@@ -346,6 +346,7 @@ static int ffdec_init_sw(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 {
     AVCodecContext *avctx = ctx->avctx;
     avctx->thread_count = 0;
+    avctx->flags2 |= AV_CODEC_FLAG2_ICC_PROFILES;
 
     const AVCodec *codec = avcodec_find_decoder(avctx->codec_id);
     return avcodec_open2(avctx, codec, NULL);
@@ -353,6 +354,9 @@ static int ffdec_init_sw(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 
 static int ffdec_init_hw(struct decoder_ctx *ctx, const struct nmdi_opts *opts)
 {
+    AVCodecContext *avctx = ctx->avctx;
+    avctx->flags2 |= AV_CODEC_FLAG2_ICC_PROFILES;
+
 #if HAVE_MEDIACODEC_HWACCEL
     return init_mediacodec(ctx);
 #elif HAVE_VAAPI_HWACCEL
