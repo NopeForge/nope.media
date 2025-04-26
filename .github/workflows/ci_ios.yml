@@ -56,8 +56,8 @@ jobs:
         --enable-avdevice --enable-swresample ${{ matrix.ff_opts }} \
         --enable-filter=aresample,aformat,asetnsamples,asettb,copy,format,scale,settb \
         --enable-demuxer=image_jpeg_pipe,matroska \
-        --enable-decoder=mjpeg,flac,h264 \
-        --enable-parser=h264,mjpeg,flac \
+        --enable-decoder=mjpeg,flac \
+        --enable-parser=mjpeg,flac \
         --enable-protocol=file \
         --target-os=darwin \
         --arch=${{ matrix.arch }} \
