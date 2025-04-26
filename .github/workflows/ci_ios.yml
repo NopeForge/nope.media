@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64, arm64]
+        arch: [arm64]
         ffmpeg_version: ["6.1.1", "7.0"]
 
     steps:
@@ -32,11 +32,7 @@ jobs:
 
     - name: Compile ffmpeg source with the Xcode toolchain for ios & install it to a specific directory
       run: |
-        if [ ${{ matrix.arch }} == "x86_64" ]; then
-          PLATFORM="iphonesimulator"
-          IOS_VERSION=$(xcrun simctl list runtimes iOS -j|jq '.runtimes|last.version')
-          CFLAGS="-arch ${{ matrix.arch }} -mios-simulator-version-min=$IOS_VERSION"
-        elif [ ${{ matrix.arch }} == "arm64" ]; then
+        if [ ${{ matrix.arch }} == "arm64" ]; then
           PLATFORM="iphoneos"
           IOS_VERSION=$(xcrun --sdk $PLATFORM --show-sdk-version)
           CFLAGS="-arch ${{ matrix.arch }} -mios-version-min=$IOS_VERSION"
