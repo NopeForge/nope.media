@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Enable auto-detection of ICC profiles by default
 
+### Fixed
+- Build with FFmpeg 8.0
+
 ## [13.0.0] - 2024-12-02
 ### Removed
 - Support for FFmpeg < 6.1
