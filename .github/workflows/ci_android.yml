@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         arch: [x86_64, arm, aarch64]
-        ffmpeg_version: ["7.1.1"]
+        ffmpeg_version: ["7.1.1", "8.0"]
 
     steps:
     - uses: actions/checkout@v3
@@ -64,5 +64,5 @@ jobs:
       if: ${{ always() }}
       uses: actions/upload-artifact@v4
       with:
-        name: android-logs-${{ matrix.arch }}
+        name: android-logs-${{ matrix.arch }}-${{ matrix.ffmpeg_version }}
         path: builddir/meson-logs
