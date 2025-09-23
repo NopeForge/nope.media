@@ -161,20 +161,20 @@ static const struct {
     enum AVCodecID codec_id;
     VAProfile va_profile;
 } va_profile_map[] = {
-    {FF_PROFILE_H264_CONSTRAINED_BASELINE, AV_CODEC_ID_H264, VAProfileH264ConstrainedBaseline},
-    {FF_PROFILE_H264_MAIN,                 AV_CODEC_ID_H264, VAProfileH264Main},
-    {FF_PROFILE_H264_HIGH,                 AV_CODEC_ID_H264, VAProfileH264High},
+    {AV_PROFILE_H264_CONSTRAINED_BASELINE, AV_CODEC_ID_H264, VAProfileH264ConstrainedBaseline},
+    {AV_PROFILE_H264_MAIN,                 AV_CODEC_ID_H264, VAProfileH264Main},
+    {AV_PROFILE_H264_HIGH,                 AV_CODEC_ID_H264, VAProfileH264High},
 #if VA_CHECK_VERSION(1, 18, 0)
-    {FF_PROFILE_H264_HIGH_10,              AV_CODEC_ID_H264, VAProfileH264High10},
+    {AV_PROFILE_H264_HIGH_10,              AV_CODEC_ID_H264, VAProfileH264High10},
 #endif
 
-    {FF_PROFILE_HEVC_MAIN,                 AV_CODEC_ID_HEVC, VAProfileHEVCMain},
-    {FF_PROFILE_HEVC_MAIN_10,              AV_CODEC_ID_HEVC, VAProfileHEVCMain10},
-    {FF_PROFILE_HEVC_MAIN_STILL_PICTURE,   AV_CODEC_ID_HEVC, VAProfileHEVCMain},
+    {AV_PROFILE_HEVC_MAIN,                 AV_CODEC_ID_HEVC, VAProfileHEVCMain},
+    {AV_PROFILE_HEVC_MAIN_10,              AV_CODEC_ID_HEVC, VAProfileHEVCMain10},
+    {AV_PROFILE_HEVC_MAIN_STILL_PICTURE,   AV_CODEC_ID_HEVC, VAProfileHEVCMain},
 
 #if VA_CHECK_VERSION(1, 8, 0)
-    {FF_PROFILE_AV1_MAIN,                  AV_CODEC_ID_AV1,  VAProfileAV1Profile0},
-    {FF_PROFILE_AV1_HIGH,                  AV_CODEC_ID_AV1,  VAProfileAV1Profile1},
+    {AV_PROFILE_AV1_MAIN,                  AV_CODEC_ID_AV1,  VAProfileAV1Profile0},
+    {AV_PROFILE_AV1_HIGH,                  AV_CODEC_ID_AV1,  VAProfileAV1Profile1},
 #endif
 };
 
